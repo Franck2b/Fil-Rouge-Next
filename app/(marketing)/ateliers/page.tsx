@@ -6,7 +6,7 @@ import { getWorkshops } from "@/lib/data/catalog";
 export const metadata: Metadata = {
   title: "Nos ateliers",
   description:
-    "Les ateliers partagés Établi à Paris, Lyon et Nantes : adresses, horaires, surfaces et équipements disponibles sur place.",
+    "Les ateliers partagés Gabarit à Paris, Lyon et Nantes : adresses, horaires, surfaces et équipements disponibles sur place.",
   alternates: { canonical: "/ateliers" },
 };
 

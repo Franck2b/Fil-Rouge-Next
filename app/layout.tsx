@@ -25,18 +25,18 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
   title: {
-    default: "Établi · Réseau d'ateliers partagés",
-    template: "%s · Établi",
+    default: "Gabarit · Réseau d'ateliers partagés",
+    template: "%s · Gabarit",
   },
   description:
     "Réservez la découpeuse laser, la CNC ou le tour à métaux d'un atelier partagé près de chez vous. Habilitations encadrées, créneaux à l'heure, crédits prépayés.",
   keywords: ["fablab", "atelier partagé", "découpe laser", "impression 3D", "CNC", "réservation machine"],
-  authors: [{ name: "Établi" }],
+  authors: [{ name: "Gabarit" }],
   openGraph: {
     type: "website",
     locale: "fr_FR",
-    siteName: "Établi",
-    title: "Établi · Réseau d'ateliers partagés",
+    siteName: "Gabarit",
+    title: "Gabarit · Réseau d'ateliers partagés",
     description:
       "Réservez une machine dans un atelier partagé, à l'heure, avec une habilitation encadrée.",
   },

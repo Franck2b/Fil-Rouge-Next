@@ -9,7 +9,7 @@ import { CATEGORY_LABELS, MACHINE_CATEGORIES } from "@/lib/types";
 export const metadata: Metadata = {
   title: "Réservez une machine dans un atelier partagé",
   description:
-    "Découpe laser, impression 3D, CNC, tour à métaux : réservez à l'heure dans un atelier Établi à Paris, Lyon ou Nantes. Habilitation encadrée, crédits prépayés, pas d'abonnement.",
+    "Découpe laser, impression 3D, CNC, tour à métaux : réservez à l'heure dans un atelier Gabarit à Paris, Lyon ou Nantes. Habilitation encadrée, crédits prépayés, pas d'abonnement.",
   alternates: { canonical: "/" },
 };
 

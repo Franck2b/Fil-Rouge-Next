@@ -6,7 +6,7 @@ import { CATEGORY_LABELS, MACHINE_CATEGORIES } from "@/lib/types";
 export const metadata: Metadata = {
   title: "Tarifs & crédits",
   description:
-    "Pas d'abonnement : on achète des crédits, on les dépense à l'heure de machine. Grille tarifaire complète du réseau Établi.",
+    "Pas d'abonnement : on achète des crédits, on les dépense à l'heure de machine. Grille tarifaire complète du réseau Gabarit.",
   alternates: { canonical: "/tarifs" },
 };
 

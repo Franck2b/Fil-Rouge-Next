@@ -1,18 +1,18 @@
--- ÉTABLI · données de démarrage
+-- GABARIT · données de démarrage
 -- Contenu du catalogue uniquement. Les comptes se créent via l'app :
 -- voir la fin du fichier pour promouvoir un compte en admin.
 
 insert into workshops (slug, name, city, address, latitude, longitude, opening, description, image_url)
 values
-  ('paris-11', 'Établi République', 'Paris', '18 rue de la Fonderie, 75011 Paris',
+  ('paris-11', 'Gabarit République', 'Paris', '18 rue de la Fonderie, 75011 Paris',
    48.8631, 2.3708, 'Lun–Sam · 9h–20h',
    'Notre atelier historique : 420 m² répartis entre le pôle découpe, la menuiserie et un espace prototypage électronique.',
    '/img/atelier-paris-11.png'),
-  ('lyon-7', 'Établi Guillotière', 'Lyon', '7 quai des Ateliers, 69007 Lyon',
+  ('lyon-7', 'Gabarit Guillotière', 'Lyon', '7 quai des Ateliers, 69007 Lyon',
    45.7452, 4.8419, 'Lun–Ven · 9h–20h · Sam 10h–18h',
    'Un plateau unique de 300 m² pensé pour les séries courtes : impression 3D, textile technique et métal.',
    '/img/atelier-lyon-7.png'),
-  ('nantes-centre', 'Établi Chantiers', 'Nantes', '2 boulevard des Chantiers, 44200 Nantes',
+  ('nantes-centre', 'Gabarit Chantiers', 'Nantes', '2 boulevard des Chantiers, 44200 Nantes',
    47.2064, -1.5623, 'Mar–Sam · 10h–19h',
    'Le dernier-né, orienté bois et gros volumes, avec un quai de chargement et un stock de panneaux.',
    '/img/atelier-nantes-centre.png');
@@ -81,4 +81,4 @@ join workshops w on w.slug = m.workshop_slug;
 
 -- Promouvoir un compte en administrateur (à exécuter après l'inscription) :
 -- update profiles set role = 'admin'
--- where id = (select id from auth.users where email = 'admin@etabli.fr');
+-- where id = (select id from auth.users where email = 'admin@gabarit.fr');

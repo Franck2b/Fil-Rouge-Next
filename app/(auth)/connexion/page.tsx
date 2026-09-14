@@ -4,7 +4,7 @@ import { SignInForm } from "@/components/auth/auth-form";
 
 export const metadata: Metadata = {
   title: "Connexion",
-  description: "Accédez à votre espace Établi pour gérer vos réservations et vos crédits.",
+  description: "Accédez à votre espace Gabarit pour gérer vos réservations et vos crédits.",
   robots: { index: false },
 };
 

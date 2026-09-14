@@ -1,4 +1,4 @@
--- ÉTABLI · schéma initial
+-- GABARIT · schéma initial
 -- Réseau d'ateliers partagés : ateliers, machines, habilitations, réservations, crédits.
 
 create extension if not exists btree_gist;

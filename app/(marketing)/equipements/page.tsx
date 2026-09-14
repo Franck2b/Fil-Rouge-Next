@@ -11,7 +11,7 @@ import { CATEGORY_LABELS, MACHINE_CATEGORIES, MACHINE_STATUS_LABELS } from "@/li
 export const metadata: Metadata = {
   title: "Le parc machines",
   description:
-    "Toutes les machines réservables du réseau Établi : découpe laser, impression 3D, bois, métal, textile et électronique, avec leur coût horaire en crédits.",
+    "Toutes les machines réservables du réseau Gabarit : découpe laser, impression 3D, bois, métal, textile et électronique, avec leur coût horaire en crédits.",
   alternates: { canonical: "/equipements" },
 };
 

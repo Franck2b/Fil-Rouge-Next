@@ -1,8 +1,8 @@
-# Établi — réseau d'ateliers partagés
+# Gabarit — réseau d'ateliers partagés
 
 Projet fil rouge M2 EEMI · **Next.js 16.3 (App Router) + Supabase**.
 
-Établi est un produit de réservation de machines dans un réseau d'ateliers partagés
+Gabarit est un produit de réservation de machines dans un réseau d'ateliers partagés
 (fablabs). Un membre passe une **habilitation** par famille de machines, achète des
 **crédits**, puis réserve des **créneaux horaires** sur une machine précise d'un
 atelier précis. Un administrateur arbitre les habilitations, gère le parc et
@@ -62,8 +62,8 @@ where id = (select id from auth.users where email = 'VOTRE@EMAIL');
 
 | Rôle | E-mail | Mot de passe |
 | --- | --- | --- |
-| Membre | `membre@etabli.test` | *(communiqué à l'oral)* |
-| Administrateur | `admin@etabli.test` | *(communiqué à l'oral)* |
+| Membre | `membre@gabarit.test` | *(communiqué à l'oral)* |
+| Administrateur | `admin@gabarit.test` | *(communiqué à l'oral)* |
 
 Les deux comptes existent sur le projet Supabase du dépôt. Pour les recréer
 ailleurs : inscription depuis `/inscription` (les deux étapes d'onboarding

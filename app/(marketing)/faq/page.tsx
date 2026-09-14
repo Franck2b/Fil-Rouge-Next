@@ -5,7 +5,7 @@ import { ButtonLink } from "@/components/ui/button";
 export const metadata: Metadata = {
   title: "Questions fréquentes",
   description:
-    "Habilitations, annulations, sécurité, matériaux, stockage : les réponses aux questions posées avant une première réservation chez Établi.",
+    "Habilitations, annulations, sécurité, matériaux, stockage : les réponses aux questions posées avant une première réservation chez Gabarit.",
   alternates: { canonical: "/faq" },
 };
 

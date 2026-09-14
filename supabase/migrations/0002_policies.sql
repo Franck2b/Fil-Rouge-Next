@@ -1,4 +1,4 @@
--- ÉTABLI · Row Level Security
+-- GABARIT · Row Level Security
 -- Règle générale : le client anonyme ne lit que le contenu vitrine, un membre ne
 -- voit que ses propres lignes, l'admin voit tout. Les écritures sensibles
 -- (réservations, crédits) passent exclusivement par les fonctions SQL.

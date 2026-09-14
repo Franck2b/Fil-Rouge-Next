@@ -64,7 +64,7 @@ export function SiteFooter() {
 
       <div className="border-t border-bone/10">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-5 text-xs text-bone/40 sm:flex-row sm:items-center sm:justify-between">
-          <p>© <CurrentYear /> Établi — projet pédagogique M2 EEMI.</p>
+          <p>© <CurrentYear /> Gabarit — projet pédagogique M2 EEMI.</p>
           <p className="label-tech">Paris · Lyon · Nantes</p>
         </div>
       </div>

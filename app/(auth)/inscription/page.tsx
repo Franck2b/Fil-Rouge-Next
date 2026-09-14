@@ -4,7 +4,7 @@ import { SignUpForm } from "@/components/auth/auth-form";
 export const metadata: Metadata = {
   title: "Créer un compte",
   description:
-    "Ouvrez un compte Établi : 10 crédits offerts, accès aux trois ateliers et à leurs machines.",
+    "Ouvrez un compte Gabarit : 10 crédits offerts, accès aux trois ateliers et à leurs machines.",
   robots: { index: false },
 };
 
