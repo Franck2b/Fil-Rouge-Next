@@ -1,0 +1,112 @@
+import Image from "next/image";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+import { Badge } from "@/components/ui/badge";
+import { ButtonLink } from "@/components/ui/button";
+import { getMachinesByWorkshop, getWorkshopBySlug, getWorkshops } from "@/lib/data/catalog";
+import { CATEGORY_LABELS, MACHINE_STATUS_LABELS } from "@/lib/types";
+
+type Params = { params: Promise<{ slug: string }> };
+
+/** Les trois ateliers sont connus au build : autant les pré-rendre. */
+export async function generateStaticParams() {
+  const workshops = await getWorkshops();
+  return workshops.map((workshop) => ({ slug: workshop.slug }));
+}
+
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
+  const { slug } = await params;
+  const workshop = await getWorkshopBySlug(slug);
+
+  if (!workshop) return { title: "Atelier introuvable" };
+
+  return {
+    title: `${workshop.name} · ${workshop.city}`,
+    description: workshop.description,
+    alternates: { canonical: `/ateliers/${workshop.slug}` },
+    openGraph: { title: workshop.name, description: workshop.description },
+  };
+}
+
+export default async function WorkshopPage({ params }: Params) {
+  const { slug } = await params;
+  const workshop = await getWorkshopBySlug(slug);
+
+  // Un slug inconnu doit rendre un vrai 404, pas une page vide.
+  if (!workshop) notFound();
+
+  const machines = await getMachinesByWorkshop(workshop.id);
+
+  return (
+    <article>
+      <header className="grid-plan border-b border-line bg-ink text-bone">
+        <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 lg:grid-cols-[1fr_420px] lg:items-center">
+          <div>
+            <nav aria-label="Fil d'ariane" className="label-tech text-kraft">
+              <Link href="/ateliers" className="hover:text-rust">
+                Ateliers
+              </Link>
+              <span className="px-2">/</span>
+              <span className="text-bone/70">{workshop.city}</span>
+            </nav>
+            <h1 className="mt-4 text-4xl uppercase sm:text-5xl">{workshop.name}</h1>
+            <p className="mt-5 max-w-xl text-bone/70">{workshop.description}</p>
+
+            <dl className="mt-9 grid gap-px border border-bone/15 bg-bone/15 sm:grid-cols-3">
+              <div className="bg-ink px-4 py-4">
+                <dt className="label-tech text-kraft">Adresse</dt>
+                <dd className="mt-2 text-sm text-bone/80">{workshop.address}</dd>
+              </div>
+              <div className="bg-ink px-4 py-4">
+                <dt className="label-tech text-kraft">Ouverture</dt>
+                <dd className="mt-2 text-sm text-bone/80">{workshop.opening}</dd>
+              </div>
+              <div className="bg-ink px-4 py-4">
+                <dt className="label-tech text-kraft">Machines</dt>
+                <dd className="mt-2 text-sm text-bone/80">{machines.length} postes réservables</dd>
+              </div>
+            </dl>
+          </div>
+
+          <Image
+            src={workshop.image_url ?? "/img/hero.png"}
+            alt={`Plan de l'atelier ${workshop.name}`}
+            width={1200}
+            height={800}
+            className="w-full border border-bone/25 object-cover"
+          />
+        </div>
+      </header>
+
+      <section className="mx-auto max-w-6xl px-5 py-16">
+        <h2 className="text-2xl uppercase">Le parc sur place</h2>
+
+        <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {machines.map((machine) => (
+            <li key={machine.id} className="border border-line bg-paper">
+              <Link href={`/equipements/${machine.slug}`} className="group block h-full p-6">
+                <div className="flex items-start justify-between gap-3">
+                  <Badge tone="rust">{CATEGORY_LABELS[machine.category]}</Badge>
+                  {machine.status !== "available" ? (
+                    <Badge tone="amber">{MACHINE_STATUS_LABELS[machine.status]}</Badge>
+                  ) : null}
+                </div>
+                <h3 className="mt-5 text-lg group-hover:text-rust">{machine.name}</h3>
+                <p className="mt-2 text-sm text-ink-soft">{machine.summary}</p>
+                <p className="label-tech mt-6 text-kraft">{machine.hourly_credits} crédits / heure</p>
+              </Link>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-12 flex flex-wrap gap-3">
+          <ButtonLink href="/inscription">Réserver dans cet atelier</ButtonLink>
+          <ButtonLink href="/ateliers" variant="secondary">
+            Voir les autres ateliers
+          </ButtonLink>
+        </div>
+      </section>
+    </article>
+  );
+}

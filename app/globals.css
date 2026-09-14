@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+/* ÉTABLI · direction artistique
+   Référence visuelle : le plan d'atelier. Papier clair, encre charbon, trait net,
+   un seul accent (rouille). Aucun dégradé, aucune ombre diffuse : les volumes sont
+   créés par des bordures et des aplats. */
+
+@theme {
+  --color-ink: #15130f;
+  --color-ink-soft: #3b372f;
+  --color-kraft: #8a8578;
+  --color-line: #ddd6c6;
+  --color-bone: #f5f1e8;
+  --color-paper: #fffdf8;
+  --color-rust: #d4581b;
+  --color-rust-dark: #a9430f;
+  --color-rust-wash: #fbe9df;
+  --color-moss: #2f6f4e;
+  --color-moss-wash: #e4efe8;
+  --color-amber: #9a6a05;
+  --color-amber-wash: #f7eed6;
+  --color-brick: #9b2c1e;
+  --color-brick-wash: #f8e4e0;
+
+  --font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  --radius-none: 0px;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-bone);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv05", "ss01";
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  /* Le focus doit rester parfaitement visible sur fond clair comme sur fond sombre. */
+  :focus-visible {
+    outline: 2px solid var(--color-rust);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--color-rust);
+    color: var(--color-paper);
+  }
+}
+
+@layer components {
+  /* Étiquette technique : petites capitales espacées, comme une cote sur un plan. */
+  .label-tech {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  /* Trame millimétrée réutilisée en fond des zones sombres. */
+  .grid-plan {
+    background-image:
+      linear-gradient(to right, rgb(255 255 255 / 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.05) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  .grid-plan-light {
+    background-image:
+      linear-gradient(to right, rgb(21 19 15 / 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(21 19 15 / 0.05) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
