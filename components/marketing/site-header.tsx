@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import type { ReactNode } from "react";
 import { Logo } from "@/components/logo";
-import { buttonClasses } from "@/components/ui/button";
 
 /**
  * Client Component assumé : il gère l'ouverture du menu mobile et met en avant
@@ -17,7 +17,13 @@ const LINKS = [
   { href: "/faq", label: "FAQ" },
 ];
 
-export function SiteHeader() {
+export function SiteHeader({
+  account,
+  accountMobile,
+}: {
+  account: ReactNode;
+  accountMobile: ReactNode;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -44,14 +50,7 @@ export function SiteHeader() {
           })}
         </nav>
 
-        <div className="hidden items-center gap-3 md:flex">
-          <Link href="/connexion" className="text-sm text-ink-soft hover:text-ink">
-            Connexion
-          </Link>
-          <Link href="/inscription" className={buttonClasses("primary", "sm")}>
-            Créer un compte
-          </Link>
-        </div>
+        <div className="hidden items-center gap-3 md:flex">{account}</div>
 
         <button
           type="button"
@@ -80,22 +79,7 @@ export function SiteHeader() {
                 </li>
               ))}
             </ul>
-            <div className="mt-4 flex flex-col gap-2">
-              <Link
-                href="/connexion"
-                onClick={() => setOpen(false)}
-                className={buttonClasses("secondary", "md")}
-              >
-                Connexion
-              </Link>
-              <Link
-                href="/inscription"
-                onClick={() => setOpen(false)}
-                className={buttonClasses("primary", "md")}
-              >
-                Créer un compte
-              </Link>
-            </div>
+            <div className="mt-4 flex flex-col gap-2">{accountMobile}</div>
           </nav>
         </div>
       ) : null}
