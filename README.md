@@ -10,51 +10,132 @@ ajuste les crédits.
 
 ---
 
-## 1. Lancer le projet
+## 1. Lancer le projet de A à Z
+
+### Prérequis
+
+Node.js 20 ou plus (`node -v`), npm, et un compte [supabase.com](https://supabase.com)
+(gratuit). Aucune installation de base de données en local : Postgres est hébergé
+par Supabase.
+
+### Étape 1 — Installer les dépendances
 
 ```bash
 npm install
-cp .env.example .env.local   # puis renseigner les clés Supabase
-npm run dev
 ```
 
-| Script | Rôle |
-| --- | --- |
-| `npm run dev` | Serveur de développement (Turbopack) |
-| `npm run build` | Build de production |
-| `npm run start` | Serveur de production |
-| `npm run lint` | ESLint (config `next/core-web-vitals`) |
-| `npm run typecheck` | `tsc --noEmit` |
+### Étape 2 — Créer le projet Supabase
 
-### Variables d'environnement
+Sur [supabase.com](https://supabase.com) : **New project**, choisir une région
+européenne, générer un mot de passe de base de données et **le conserver**
+(Supabase ne le réaffiche pas). La création prend une à deux minutes.
 
-Voir `.env.example`. Les trois variables sont publiques (préfixe `NEXT_PUBLIC_`) :
-aucune clé de service (`service_role`) n'est utilisée par l'application, toute la
-sécurité repose sur les politiques RLS de Postgres.
+### Étape 3 — Créer le schéma et les données
 
-| Variable | Où la trouver |
-| --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → Data API |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API Keys → `anon public` |
-| `NEXT_PUBLIC_SITE_URL` | URL publique du site (metadata, sitemap, robots) |
-
-### Mise en place de la base
-
-Dans le **SQL Editor** du projet Supabase, exécuter dans cet ordre :
+Dans le **SQL Editor** du projet, coller puis exécuter les trois fichiers **dans
+cet ordre** :
 
 1. `supabase/migrations/0001_init.sql` — types, tables, contraintes, fonctions métier
 2. `supabase/migrations/0002_policies.sql` — Row Level Security
 3. `supabase/seed.sql` — catalogue (3 ateliers, 14 machines)
 
-Puis créer un compte depuis `/inscription` et le promouvoir administrateur :
+Le premier déclenche un avertissement « *This query creates tables without
+enabling RLS* » : choisir **Run and enable RLS**. Les politiques arrivent au
+fichier suivant.
+
+Vérification :
+
+```sql
+select (select count(*) from workshops)  as ateliers,
+       (select count(*) from machines)   as machines,
+       (select count(*) from pg_policies where schemaname = 'public') as policies;
+```
+
+Résultat attendu : **3 ateliers, 14 machines, 14 politiques**.
+
+### Étape 4 — Autoriser la connexion sans boîte mail
+
+**Authentication → Sign In / Providers → Email** : désactiver **Confirm email**,
+puis **Save changes**. Sans cela, aucun compte de démonstration ne peut se
+connecter.
+
+### Étape 5 — Renseigner les variables d'environnement
+
+```bash
+cp .env.example .env.local
+```
+
+Puis remplir `.env.local` avec les valeurs du projet :
+
+| Variable | Où la trouver dans Supabase |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Project Settings → Data API → *Project URL* |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Project Settings → API Keys → *Publishable key* (`sb_publishable_…`) |
+| `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` en local, l'URL Vercel en production |
+
+Les trois variables sont publiques (préfixe `NEXT_PUBLIC_`). **Aucune clé de
+service (`sb_secret_…` / `service_role`) n'est utilisée par l'application** :
+toute la sécurité repose sur les politiques RLS de Postgres.
+
+> `.env.local` n'est pas versionné. Après toute modification, redémarrer le
+> serveur de développement.
+
+### Étape 6 — Démarrer
+
+```bash
+npm run dev
+```
+
+L'application est sur **http://localhost:3000**. La vitrine doit afficher
+« 3 ateliers · 14 machines » : si ces compteurs sont à zéro, les clés ou le seed
+sont en cause.
+
+### Étape 7 — Créer les comptes
+
+1. Aller sur `/inscription`, créer `membre@gabarit.test`, **terminer les deux
+   étapes d'onboarding** (profil + atelier, puis une première habilitation).
+2. Se déconnecter, créer `admin@gabarit.test` de la même façon.
+3. Promouvoir le second en administrateur, dans le SQL Editor :
 
 ```sql
 update profiles set role = 'admin'
-where id = (select id from auth.users where email = 'VOTRE@EMAIL');
+where id = (select id from auth.users where email = 'admin@gabarit.test');
 ```
 
-> Pour tester sans boîte mail : Authentication → Providers → Email →
-> désactiver « Confirm email ».
+4. Recharger `/tableau-de-bord` : le lien **Administration** apparaît dans la
+   navigation latérale.
+
+Pour ouvrir le planning, se connecter en admin, aller sur **Administration →
+Habilitations** et valider la demande du membre.
+
+### Scripts disponibles
+
+| Script | Rôle |
+| --- | --- |
+| `npm run dev` | Serveur de développement (Turbopack) |
+| `npm run build` | Build de production — à lancer avant tout rendu |
+| `npm run start` | Serveur de production (nécessite un `build` préalable) |
+| `npm run lint` | ESLint (config `next/core-web-vitals`) |
+| `npm run typecheck` | `tsc --noEmit` |
+
+### Déployer sur Vercel
+
+Importer le dépôt, reporter les trois variables d'environnement dans
+**Settings → Environment Variables** (avec `NEXT_PUBLIC_SITE_URL` sur l'URL de
+production), puis déployer. Aucune configuration supplémentaire n'est requise.
+
+### En cas de problème
+
+| Symptôme | Cause probable |
+| --- | --- |
+| `fetch failed` au démarrage | `.env.local` absent, mal placé ou non rechargé |
+| Vitrine à « 0 atelier · 0 machine » | `seed.sql` non exécuté |
+| « Invalid login credentials » à la connexion | Compte inexistant, ou **Confirm email** encore activé |
+| Le lien Administration n'apparaît pas | Requête de promotion non exécutée, ou page non rechargée |
+| Liste vide côté back-office | Migration `0002_policies.sql` non exécutée |
+
+> Un guide détaillé du code — rôle de chaque dossier et de chaque fichier,
+> recettes de modification — est disponible dans [`GUIDE.md`](./GUIDE.md).
 
 ---
 
@@ -62,13 +143,14 @@ where id = (select id from auth.users where email = 'VOTRE@EMAIL');
 
 | Rôle | E-mail | Mot de passe |
 | --- | --- | --- |
-| Membre | `membre@gabarit.test` | *(communiqué à l'oral)* |
-| Administrateur | `admin@gabarit.test` | *(communiqué à l'oral)* |
+| Membre | `membre@etabli.test` | *(communiqué à l'oral)* |
+| Administrateur | `admin@etabli.test` | *(communiqué à l'oral)* |
 
-Les deux comptes existent sur le projet Supabase du dépôt. Pour les recréer
-ailleurs : inscription depuis `/inscription` (les deux étapes d'onboarding
-doivent être terminées), puis la requête `update profiles set role = 'admin'`
-ci-dessus pour l'administrateur.
+Ces deux comptes existent sur le projet Supabase rattaché au dépôt. Leur domaine
+`@etabli.test` est antérieur au renommage du produit : ce sont des identifiants
+de connexion, les changer reviendrait à recréer les comptes.
+
+Sur une installation neuve, suivre l'étape 7 ci-dessus.
 
 > `Confirm email` est désactivé côté Supabase (Authentication → Sign In /
 > Providers → Email). Sans cela, aucun compte de démonstration ne peut se
