@@ -118,30 +118,45 @@ l'URL, il sert à donner un layout et une garde communs.
 
 ## 3. « Je dois faire X » → j'ouvre Y
 
-| Demande du jury | Fichier(s) |
+**Front** — le cas quasi certain en live coding :
+
+| Demande | Fichier(s) |
 | --- | --- |
 | Changer une **couleur**, une police, un espacement global | `app/globals.css` |
 | Modifier un **bouton / badge / alerte** partout | `components/ui/…` |
+| Ajouter une **variante de bouton** | `components/ui/button.tsx` : type `Variant` + objet `VARIANTS` |
 | Changer un **texte** de la vitrine | la `page.tsx` concernée dans `app/(marketing)/` |
+| Ajouter une **section** à une page | la `page.tsx` : copier le gabarit d'une section voisine |
 | Modifier le **menu** public | `components/marketing/site-header.tsx` |
 | Modifier le **menu** de l'espace membre | `components/app/app-nav.tsx` |
 | **Ajouter une page publique** | créer `app/(marketing)/ma-page/page.tsx` |
 | **Ajouter une page membre** | créer `app/(app)/ma-page/page.tsx` — la garde est déjà dans le layout |
+| **Ajouter un filtre / un tri** | la `page.tsx` : lire `searchParams`, filtrer, construire les liens |
+| **Rendre un bloc interactif** | extraire un petit composant `"use client"`, garder la page serveur |
+| **Ajouter un état de chargement** | un `loading.tsx` dans le dossier de la route, ou un `<Suspense>` |
+| **Ajouter un état vide** | `<EmptyState title description action />` |
+| **Gérer une ressource inexistante** | `notFound()` dans la page |
+| **Corriger un débordement mobile** | la `page.tsx` : préfixes `sm:` / `md:` / `lg:`, `overflow-x-auto` |
+| **Ajouter un champ** à un formulaire | `lib/validation.ts` → le `…-form.tsx` → l'action |
+
+**Données** — moins probable sur ce module, mais à savoir situer :
+
+| Demande | Fichier(s) |
+| --- | --- |
 | **Protéger une route** | `requireOnboardedViewer()` dans la page + préfixe dans `proxy.ts` |
-| **Ajouter un rôle / une règle d'accès** | `lib/auth.ts` **et** `0002_policies.sql` |
-| **Ajouter un filtre** dans une liste | la `page.tsx` : lire `searchParams`, filtrer, construire les liens |
-| **Ajouter un champ** à un formulaire | `lib/validation.ts` → le `…-form.tsx` → l'action → la migration SQL |
 | **Créer une mutation** | `lib/actions/` + un formulaire client avec `useActionState` |
 | **Invalider un cache** | `revalidateCatalog()` (public) ou `revalidatePath()` (privé) |
-| **Ajouter un état de chargement** | un `loading.tsx` dans le dossier de la route, ou un `<Suspense>` |
-| **Gérer une ressource inexistante** | `notFound()` dans la page |
+| **Ajouter un rôle / une règle d'accès** | `lib/auth.ts` **et** `0002_policies.sql` |
+| **Persister un nouveau champ** | colonne SQL + `lib/types.ts` |
 | **Ajouter une machine / un atelier** | `supabase/seed.sql` puis exécution dans le SQL Editor |
 
 ---
 
 ## 4. Les six fichiers à connaître par cœur
 
-Si le jury ouvre le projet au hasard, il tombera probablement sur l'un de ceux-là.
+Les deux premiers et les deux derniers sont les plus utiles en live coding. Les
+numéros 3 et 4 servent surtout à l'**explication orale** : le module note
+Next.js, mais le jury demandera comment les accès sont sécurisés.
 
 1. **`lib/auth.ts`** — trois fonctions, quinze lignes chacune. `getUser()` et non
    `getSession()` : la première revalide le JWT auprès de Supabase, la seconde
@@ -172,65 +187,163 @@ Si le jury ouvre le projet au hasard, il tombera probablement sur l'un de ceux-l
 
 ---
 
-## 5. Recettes pour les modifications types
+## 5. Recettes — modifications front
 
-### Ajouter un champ persistant (l'exemple le plus probable)
+Le module note **Next.js**, pas le backend. La demande du live coding portera
+donc presque certainement sur l'interface : un composant, un état, un affichage,
+une interaction. Les recettes sont classées de la plus probable à la moins
+probable.
 
-Ajouter « niveau d'expérience » sur une demande d'habilitation :
+### A. Modifier l'apparence (couleur, typo, espacement)
 
-1. **SQL** — dans le SQL Editor Supabase :
-   `alter table certifications add column experience_level text;`
-   Reporter la ligne dans `supabase/migrations/0001_init.sql`.
-2. **Type** — `lib/types.ts` : ajouter `experience_level: string | null;` au type
-   `Certification`.
-3. **Validation** — `lib/validation.ts` : ajouter le champ à `certificationSchema`.
-4. **Formulaire** — `components/certifications/request-form.tsx` : un `<Field>` +
-   `<Input>` de plus.
-5. **Action** — `lib/actions/certifications.ts` : lire `formData.get(...)`, le
-   passer au `safeParse`, puis à l'`upsert`.
-6. **Affichage** — `app/(admin)/admin/habilitations/page.tsx`.
+Tout part de `app/globals.css`. Les couleurs sont des **tokens** déclarés dans
+`@theme`, utilisables ensuite comme n'importe quelle classe Tailwind
+(`bg-rust`, `text-ink-soft`, `border-line`).
 
-> L'ordre compte : type → validation → formulaire → action → affichage. C'est le
-> sens de circulation de la donnée, et TypeScript signale chaque étape oubliée.
+| Token | Usage |
+| --- | --- |
+| `ink`, `ink-soft` | textes |
+| `bone`, `paper` | fonds clairs |
+| `line` | bordures |
+| `kraft` | texte secondaire, étiquettes |
+| `rust`, `rust-dark`, `rust-wash` | accent unique |
+| `moss`, `amber`, `brick` (+ `-wash`) | statuts : validé, en attente, refusé |
 
-### Ajouter un filtre via `searchParams`
+Deux classes maison : `.label-tech` (petites capitales espacées en mono) et
+`.grid-plan` / `.grid-plan-light` (la trame millimétrée des fonds).
 
-Modèle à copier depuis `app/(app)/reservations/page.tsx` :
+> Changer une couleur dans `@theme` la change **partout**. Pour un changement
+> local, utiliser directement la classe sur l'élément.
+
+### B. Ajouter ou modifier un composant d'interface
+
+Les briques vivent dans `components/ui/`. Chacune est volontairement minuscule.
+
+Ajouter une **variante de bouton** — `components/ui/button.tsx` :
+
+1. Ajouter le nom au type `Variant`.
+2. Ajouter la ligne correspondante dans l'objet `VARIANTS`.
+
+C'est tout : `Button` et `ButtonLink` la prennent automatiquement.
+
+> **Piège à éviter absolument en direct :** ne jamais surcharger une couleur de
+> variante par `className`. Deux utilitaires Tailwind de même propriété
+> (`border-ink` et `border-bone`) sont départagés par l'ordre de la **feuille de
+> style**, pas par l'ordre des classes — le bouton devient invisible. C'est ce
+> qui est arrivé sur ce projet, d'où les variantes `inverse`, `onRust` et
+> `ghostInverse`.
+
+Les autres briques suivent le même schéma : `Badge` a des `tone`
+(`neutral`, `rust`, `moss`, `amber`, `brick`), `Alert` a des `tone`
+(`info`, `success`, `warning`, `error`).
+
+### C. Ajouter une section à une page existante
+
+Ouvrir la `page.tsx` concernée et copier le gabarit d'une section voisine. Le
+modèle de la vitrine est constant :
+
+```tsx
+<section className="border-b border-line">
+  <div className="mx-auto max-w-6xl px-5 py-20">
+    <p className="label-tech text-kraft">Sur-titre</p>
+    <h2 className="mt-3 text-3xl uppercase sm:text-4xl">Titre</h2>
+    {/* contenu */}
+  </div>
+</section>
+```
+
+`max-w-6xl px-5` est la largeur de contenu commune à tout le site : la respecter
+suffit à rester aligné avec le reste.
+
+### D. Ajouter une page
+
+Créer `app/(groupe)/ma-page/page.tsx`. Le **groupe choisi décide de tout** :
+
+- `(marketing)` → publique, indexable, pré-rendue, avec header et footer
+- `(app)` → protégée par `requireOnboardedViewer`, avec la navigation membre
+- `(admin)` → réservée au rôle admin, châssis sombre
+
+Aucune garde à écrire : elle est déjà dans le `layout.tsx` du groupe. Ajouter un
+`export const metadata` pour le titre de l'onglet.
+
+### E. Rendre un composant interactif
+
+Un Server Component ne peut pas utiliser `useState`. Deux options :
+
+1. Ajouter `"use client"` en tête du fichier — acceptable si le composant est
+   **une feuille** de l'arbre, sans accès aux données.
+2. Mieux : extraire uniquement la partie interactive dans un petit composant
+   client, et garder la page en Server Component.
+
+C'est l'arbitrage que le jury veut entendre. Le projet a un exemple des deux :
+`site-header.tsx` est entièrement client (menu mobile + route active), tandis
+que `header-account.tsx` reste serveur pour lire la session et n'est monté que
+dans un `<Suspense>`.
+
+### F. Ajouter un état loading, empty ou error
+
+| État | Comment |
+| --- | --- |
+| **loading** | créer un `loading.tsx` dans le dossier de la route — Next l'utilise automatiquement comme `<Suspense>`. Modèle : `app/(app)/tableau-de-bord/loading.tsx` |
+| **empty** | le composant `<EmptyState title description action />` |
+| **error** | `app/error.tsx` couvre déjà tout ; pour une erreur locale, `<Alert tone="error">` |
+| **404** | `notFound()` dans la page → `app/not-found.tsx` |
+
+### G. Ajouter un filtre ou un tri
+
+Modèle à copier depuis `app/(app)/reservations/page.tsx` ou
+`app/(marketing)/equipements/page.tsx`.
 
 ```tsx
 const { statut = "" } = await searchParams;
 ```
 
-Trois points à dire à voix haute : le filtre vit **dans l'URL** (partageable,
-fonctionne sans JavaScript) ; la lecture de `searchParams` rend la page
-**dynamique**, d'où le `<Suspense>` ; et on **valide** la valeur reçue au lieu de
-la passer telle quelle à la requête.
+Trois choses à dire à voix haute : le filtre vit **dans l'URL** (partageable,
+fonctionne sans JavaScript) ; lire `searchParams` rend la page **dynamique**,
+d'où le `<Suspense>` autour ; et on **valide** la valeur reçue au lieu de la
+passer telle quelle à la requête.
 
-### Protéger une route supplémentaire
+### H. Corriger le responsive
 
-```tsx
-const viewer = await requireOnboardedViewer("/ma-route");
-```
+Le site est en *mobile first* : les classes sans préfixe s'appliquent au
+téléphone, `sm:` / `md:` / `lg:` élargissent ensuite.
 
-Puis ajouter `"/ma-route"` à `PROTECTED_PREFIXES` dans `proxy.ts`. Préciser que
-le `proxy` n'est qu'un raccourci : la vraie garde est la fonction serveur, et la
-RLS derrière.
+Deux pièges déjà rencontrés :
 
-### Invalider correctement un cache
+- Un tableau large doit vivre dans un conteneur `overflow-x-auto`, jamais
+  déborder la page (voir `/tarifs`).
+- Une grille `gap-px` sur fond coloré laisse apparaître des **cellules
+  fantômes** quand le nombre d'éléments ne remplit pas la ligne. Préférer
+  `gap-4` avec des cartes bordées individuellement.
 
-Après une écriture qui change le **catalogue public** : `revalidateCatalog()`
-(`lib/data/tags.ts`). Après une écriture qui change une **page privée** :
-`revalidatePath("/tableau-de-bord")`.
+### I. Ajouter un champ à un formulaire
 
-`updateTag()` plutôt que `revalidateTag()` dans une Server Action : il expire
-l'entrée immédiatement, donc l'admin relit sa propre écriture.
+Dans l'ordre — TypeScript signale chaque étape oubliée :
 
-### Ajouter un état loading
+1. `lib/validation.ts` — ajouter le champ au schéma zod
+2. `components/**/…-form.tsx` — un `<Field>` + `<Input>` de plus
+3. `lib/actions/…` — lire `formData.get(...)`, le passer au `safeParse`, puis à
+   l'écriture
+4. la page qui l'affiche
 
-Créer `loading.tsx` dans le dossier de la route — Next l'utilise automatiquement
-comme `<Suspense>`. Modèle dans `app/(app)/tableau-de-bord/loading.tsx`.
+Si le champ doit être **stocké**, il faut en plus une colonne
+(`alter table … add column …` dans le SQL Editor) et l'ajouter au type dans
+`lib/types.ts`. Mais sur ce module, la demande s'arrêtera probablement à
+l'affichage et à la validation.
 
 ---
+
+### Si la demande touche quand même la donnée
+
+Trois cas, traités en une ligne chacun :
+
+- **Protéger une route** → `requireOnboardedViewer()` dans la page, puis le
+  préfixe dans `PROTECTED_PREFIXES` (`proxy.ts`). Le proxy n'est qu'un
+  raccourci : la vraie garde est la fonction serveur, et la RLS derrière.
+- **Invalider un cache** → `revalidateCatalog()` (`lib/data/tags.ts`) pour le
+  catalogue public, `revalidatePath("/ma-route")` pour une page privée.
+- **Créer une mutation** → un fichier dans `lib/actions/` avec `"use server"`,
+  puis un formulaire client branché par `useActionState`.
 
 ## 6. Pièges déjà rencontrés sur ce projet
 
