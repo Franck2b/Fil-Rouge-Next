@@ -70,7 +70,7 @@ Puis remplir `.env.local` avec les valeurs du projet :
 | Variable | Où la trouver dans Supabase |
 | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Project Settings → Data API → *Project URL* |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Project Settings → API Keys → *Publishable key* (`sb_publishable_…`) |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Project Settings → API Keys → *Publishable key* (`sb_publishable_…`) |
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` en local, l'URL Vercel en production |
 
 Les trois variables sont publiques (préfixe `NEXT_PUBLIC_`). **Aucune clé de
