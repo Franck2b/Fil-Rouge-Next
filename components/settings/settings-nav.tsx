@@ -1,22 +1,24 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Link } from "@/components/ui/link";
+import { stripLocale } from "@/lib/i18n/config";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
-const TABS = [
-  { href: "/parametres", label: "Profil" },
-  { href: "/parametres/preferences", label: "Préférences" },
-  { href: "/parametres/securite", label: "Sécurité" },
-  { href: "/parametres/credits", label: "Crédits" },
-];
+export function SettingsNav({ t }: { t: Dictionary["app"]["settings"] }) {
+  const pathname = stripLocale(usePathname());
 
-export function SettingsNav() {
-  const pathname = usePathname();
+  const tabs = [
+    { href: "/parametres", label: t.tabProfile },
+    { href: "/parametres/preferences", label: t.tabPreferences },
+    { href: "/parametres/securite", label: t.tabSecurity },
+    { href: "/parametres/credits", label: t.tabCredits },
+  ];
 
   return (
-    <nav aria-label="Sections des paramètres" className="border-b border-line">
+    <nav aria-label={t.tabsLabel} className="border-b border-line">
       <ul className="-mb-px flex flex-wrap gap-6">
-        {TABS.map((tab) => {
+        {tabs.map((tab) => {
           const active = pathname === tab.href;
           return (
             <li key={tab.href}>

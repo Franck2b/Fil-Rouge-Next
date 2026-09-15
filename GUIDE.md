@@ -12,7 +12,7 @@ Le trajet d'une requête, du navigateur jusqu'à Postgres :
 ```
 navigateur
    ↓
-proxy.ts                  rafraîchit le cookie de session, redirige les anonymes
+proxy.ts                  ajoute la langue (/fr, /en), rafraîchit la session, redirige les anonymes
    ↓
 app/(groupe)/layout.tsx   garde serveur : requireViewer / requireAdmin
    ↓
@@ -52,6 +52,8 @@ Un fichier ne devient `"use client"` que s'il a besoin de `useState`,
 
 ### `app/` — les routes
 
+Toutes les routes vivent sous **`app/[lang]/`** : la langue est le premier segment de chaque URL (`/fr/equipements`, `/en/equipements`). Les URL ci-dessous sont données sans ce préfixe.
+
 Chaque dossier entre parenthèses est un **route group** : il n'apparaît pas dans
 l'URL, il sert à donner un layout et une garde communs.
 
@@ -68,17 +70,17 @@ l'URL, il sert à donner un layout et une garde communs.
 
 | Fichier | Rôle |
 | --- | --- |
-| `app/layout.tsx` | Layout racine : polices (Archivo, Inter, Plex Mono), `metadata` par défaut, `<html lang="fr">`. |
+| `app/[lang]/layout.tsx` | Layout racine : polices, `metadata` traduites, `<html lang>` selon la langue, `generateStaticParams` des deux langues. |
 | `app/globals.css` | **Toute la direction artistique.** Tokens de couleur, polices, `.label-tech`, `.grid-plan`. |
-| `app/not-found.tsx` | Page 404, déclenchée par `notFound()`. |
-| `app/error.tsx` | Frontière d'erreur globale. Obligatoirement `"use client"`. |
+| `app/[lang]/not-found.tsx` | Page 404, déclenchée par `notFound()`. |
+| `app/[lang]/error.tsx` | Frontière d'erreur globale. Obligatoirement `"use client"`. |
 | `app/sitemap.ts` / `app/robots.ts` | SEO. Le sitemap lit le catalogue, donc se met à jour tout seul. |
 
 ### `components/` — l'interface
 
 | Dossier | Contenu | Client ? |
 | --- | --- | --- |
-| `ui/` | Briques de base : `button`, `badge`, `alert`, `field`, `empty-state`, `submit-button`. | serveur, sauf `submit-button` |
+| `ui/` | Briques de base : `button`, `badge`, `alert`, `field`, `empty-state`, `submit-button`, plus `link` (lien qui ajoute la langue) et `locale-switcher` (bouton FR/EN). | serveur, sauf `submit-button`, `link` et `locale-switcher` |
 | `marketing/` | `site-header` (menu mobile), `site-footer`, `header-account` (zone connexion). | header = client, les autres = serveur |
 | `app/` | `app-nav`, `page-header`, `booking-card`, `credit-badge`. | `app-nav` seul est client |
 | `admin/` | `admin-nav`, `admin-panel`, et les formulaires d'action du back-office. | formulaires = client |
@@ -89,10 +91,17 @@ l'URL, il sert à donner un layout et une garde communs.
 
 | Fichier | Rôle | Quand je l'ouvre |
 | --- | --- | --- |
-| `types.ts` | Types du domaine + libellés français (`CATEGORY_LABELS`, `BOOKING_STATUS_LABELS`…). | J'ajoute un champ ou un statut. |
+| `i18n/dictionaries/fr.ts` | **Tous les textes français.** Sa forme définit le type `Dictionary`. | Je change ou j'ajoute un texte. |
+| `i18n/dictionaries/en.ts` | Tous les textes anglais, typés sur le français. | J'ajoute la traduction — le build échoue si une clé manque. |
+| `i18n/server.ts` | `getI18n()` : langue et dictionnaire dans un **Server Component**. | J'affiche un texte côté serveur. |
+| `i18n/request.ts` | `getRequestI18n()` pour les **Server Actions** et les gardes, `redirectTo()`, `revalidateLocalized()`. | Je redirige, ou je renvoie un message. |
+| `i18n/config.ts` | Langues disponibles, `localizePath()`, `stripLocale()`. | J'ajoute une langue. |
+| `i18n/text.ts` | `fill()` pour les `{variables}`, `plural()` pour les accords. | Un texte contient une valeur ou un nombre. |
+| `i18n/content.ts` | Traduction anglaise du catalogue stocké en base (machines, ateliers, motifs de crédits). | Je traduis une description de machine. |
+| `types.ts` | Types du domaine et listes de valeurs (`MACHINE_CATEGORY_VALUES`, `BOOKING_STATUS_VALUES`). Les libellés affichés sont dans les dictionnaires. | J'ajoute un champ ou un statut. |
 | `auth.ts` | `getViewer`, `requireViewer`, `requireOnboardedViewer`, `requireAdmin`. | Je protège une route. |
 | `validation.ts` | Tous les schémas zod. | J'ajoute un champ de formulaire. |
-| `format.ts` | Dates, heures, crédits, durées. | J'affiche une date. |
+| `format.ts` | Dates, heures, crédits, durées — toujours à l'heure de Paris, dans la langue passée en premier argument. | J'affiche une date. |
 | `booking.ts` | Horaires d'ouverture, calcul des créneaux, conditions d'annulation. | Je touche au planning. |
 | `data/catalog.ts` | Catalogue public, **mis en cache** (`"use cache"` + tags). | J'ajoute une lecture publique. |
 | `data/account.ts` | Données du membre connecté. Jamais cachées. | J'ajoute une lecture côté membre. |
@@ -125,12 +134,13 @@ l'URL, il sert à donner un layout et une garde communs.
 | Changer une **couleur**, une police, un espacement global | `app/globals.css` |
 | Modifier un **bouton / badge / alerte** partout | `components/ui/…` |
 | Ajouter une **variante de bouton** | `components/ui/button.tsx` : type `Variant` + objet `VARIANTS` |
-| Changer un **texte** de la vitrine | la `page.tsx` concernée dans `app/(marketing)/` |
+| Changer un **texte** (n'importe où) | `lib/i18n/dictionaries/fr.ts` **et** `en.ts` |
+| **Ajouter un texte traduit** | une clé dans `fr.ts`, la même dans `en.ts`, puis `{t.ma.cle}` — voir section 6 |
 | Ajouter une **section** à une page | la `page.tsx` : copier le gabarit d'une section voisine |
 | Modifier le **menu** public | `components/marketing/site-header.tsx` |
 | Modifier le **menu** de l'espace membre | `components/app/app-nav.tsx` |
-| **Ajouter une page publique** | créer `app/(marketing)/ma-page/page.tsx` |
-| **Ajouter une page membre** | créer `app/(app)/ma-page/page.tsx` — la garde est déjà dans le layout |
+| **Ajouter une page publique** | créer `app/[lang]/(marketing)/ma-page/page.tsx` |
+| **Ajouter une page membre** | créer `app/[lang]/(app)/ma-page/page.tsx` — la garde est déjà dans le layout |
 | **Ajouter un filtre / un tri** | la `page.tsx` : lire `searchParams`, filtrer, construire les liens |
 | **Rendre un bloc interactif** | extraire un petit composant `"use client"`, garder la page serveur |
 | **Ajouter un état de chargement** | un `loading.tsx` dans le dossier de la route, ou un `<Suspense>` |
@@ -162,7 +172,7 @@ Next.js, mais le jury demandera comment les accès sont sécurisés.
    `getSession()` : la première revalide le JWT auprès de Supabase, la seconde
    fait confiance à un cookie qui pourrait être forgé.
 
-2. **`app/(app)/reserver/[slug]/page.tsx`** — le parcours métier. Trois étapes
+2. **`app/[lang]/(app)/reserver/[slug]/page.tsx`** — le parcours métier. Trois étapes
    lisibles dans l'URL : aucun paramètre → choix du jour ; `?jour=` → choix du
    créneau ; `?jour=&debut=&duree=` → récapitulatif. Aucun état client à
    synchroniser, le bouton « retour » du navigateur fonctionne.
@@ -257,7 +267,7 @@ suffit à rester aligné avec le reste.
 
 ### D. Ajouter une page
 
-Créer `app/(groupe)/ma-page/page.tsx`. Le **groupe choisi décide de tout** :
+Créer `app/[lang]/(groupe)/ma-page/page.tsx`. Le **groupe choisi décide de tout** :
 
 - `(marketing)` → publique, indexable, pré-rendue, avec header et footer
 - `(app)` → protégée par `requireOnboardedViewer`, avec la navigation membre
@@ -284,15 +294,15 @@ dans un `<Suspense>`.
 
 | État | Comment |
 | --- | --- |
-| **loading** | créer un `loading.tsx` dans le dossier de la route — Next l'utilise automatiquement comme `<Suspense>`. Modèle : `app/(app)/tableau-de-bord/loading.tsx` |
+| **loading** | créer un `loading.tsx` dans le dossier de la route — Next l'utilise automatiquement comme `<Suspense>`. Modèle : `app/[lang]/(app)/tableau-de-bord/loading.tsx` |
 | **empty** | le composant `<EmptyState title description action />` |
-| **error** | `app/error.tsx` couvre déjà tout ; pour une erreur locale, `<Alert tone="error">` |
-| **404** | `notFound()` dans la page → `app/not-found.tsx` |
+| **error** | `app/[lang]/error.tsx` couvre déjà tout ; pour une erreur locale, `<Alert tone="error">` |
+| **404** | `notFound()` dans la page → `app/[lang]/not-found.tsx` |
 
 ### G. Ajouter un filtre ou un tri
 
-Modèle à copier depuis `app/(app)/reservations/page.tsx` ou
-`app/(marketing)/equipements/page.tsx`.
+Modèle à copier depuis `app/[lang]/(app)/reservations/page.tsx` ou
+`app/[lang]/(marketing)/equipements/page.tsx`.
 
 ```tsx
 const { statut = "" } = await searchParams;
@@ -345,7 +355,45 @@ Trois cas, traités en une ligne chacun :
 - **Créer une mutation** → un fichier dans `lib/actions/` avec `"use server"`,
   puis un formulaire client branché par `useActionState`.
 
-## 6. Pièges déjà rencontrés sur ce projet
+## 6. La traduction FR / EN
+
+### Comment ça marche
+
+1. La langue est un **segment d'URL** : `app/[lang]/`. Chaque page existe en `/fr/…` et en `/en/…`, et chacune est **pré-rendue** — la traduction ne coûte rien en performance.
+2. `proxy.ts` redirige une URL sans langue (`/equipements`) vers la langue mémorisée, sinon celle du navigateur, sinon le français.
+3. Les textes vivent dans **deux dictionnaires TypeScript**. `en.ts` est typé sur `fr.ts` : une clé oubliée **fait échouer le build**, et l'autocomplétion propose toutes les clés existantes.
+4. Le bouton `LocaleSwitcher` garde la page et ses paramètres (`?jour=…`) : seul le préfixe change.
+
+### Où lire la langue — trois cas, trois outils
+
+| Je suis dans… | J'écris | Pourquoi |
+| --- | --- | --- |
+| un **Server Component** | `const { locale, t } = await getI18n();` | `next/root-params` lit `[lang]` sans passer de prop |
+| un **Client Component** | je reçois `t` en prop depuis le parent serveur | `next/root-params` est interdit côté client |
+| une **Server Action** ou une garde d'accès | `const { locale, t } = await getRequestI18n();` | `next/root-params` est interdit dans les actions : on lit le cookie que `proxy.ts` aligne sur l'URL |
+
+C'est la question d'architecture la plus probable sur ce sujet : savoir expliquer **pourquoi** il y a deux fonctions.
+
+### Recette : ajouter un texte traduit
+
+1. `lib/i18n/dictionaries/fr.ts` : ajouter la clé, par exemple `badge: "Nouveau"` dans `home.hero`.
+2. `lib/i18n/dictionaries/en.ts` : TypeScript souligne une erreur tant que la clé manque — ajouter `badge: "New"`.
+3. Dans le composant : `{t.home.hero.badge}`.
+
+Avec une valeur : `"Bonjour, {name}"`, puis `fill(t.nav.hello, { name })`.
+Avec un nombre : `{ one: "{count} machine", other: "{count} machines" }`, puis `plural(locale, t.plural.machines, count)`.
+
+### Les liens
+
+Toujours `import { Link } from "@/components/ui/link"`, jamais `next/link` directement : ce composant ajoute la langue tout seul. On écrit `href="/equipements"`, le navigateur reçoit `/en/equipements`.
+
+### Le contenu stocké en base
+
+Les descriptions de machines et d'ateliers sont enregistrées en français. Leur version anglaise est dans `lib/i18n/content.ts`, indexée par `slug`. C'est défendable parce que le catalogue est fixe ; un catalogue éditable par l'admin demanderait des colonnes par langue en base.
+
+---
+
+## 7. Pièges déjà rencontrés sur ce projet
 
 Ce sont de vrais bugs corrigés pendant le développement. Les connaître évite de
 les réintroduire en direct, et ils font d'excellentes réponses en soutenance.
@@ -358,10 +406,12 @@ les réintroduire en direct, et ils font d'excellentes réponses en soutenance.
 | **Champ non contrôlé périmé** | Le select affiche l'ancienne valeur après enregistrement. | Ajouter une `key` sur le `<form>` pour forcer le remontage. |
 | **Cellules fantômes** | Blocs beiges vides en fin de grille. | Une grille `gap-px` sur fond coloré laisse voir le fond. Utiliser des cartes bordées individuellement. |
 | **`Date.now()` dans un composant** | Erreur ESLint, puis erreur de pré-rendu. | Lire l'heure est impur. Le faire dans une fonction de `lib/`, ou dans une fonction `"use cache"`. |
+| **Heures décalées en production** | Tous les créneaux décalés de 2 h sur Vercel. | Le serveur tourne en UTC. Les heures sont construites et affichées explicitement en `Europe/Paris` (`lib/booking.ts`, `lib/format.ts`). |
+| **Lien qui perd la langue** | Un clic renvoie en français depuis la version anglaise. | Un `next/link` importé directement n'ajoute pas le préfixe. Utiliser `@/components/ui/link`. |
 
 ---
 
-## 7. Vocabulaire à maîtriser
+## 8. Vocabulaire à maîtriser
 
 - **Route group** — dossier `(nom)` : regroupe des routes sous un layout commun
   sans apparaître dans l'URL.
@@ -376,5 +426,6 @@ les réintroduire en direct, et ils font d'excellentes réponses en soutenance.
 - **`security definer`** — fonction SQL qui s'exécute avec les droits de son
   créateur, donc au-dessus de la RLS. Sert à faire ce que le client n'a pas le
   droit de faire directement.
+- **Root params** — `next/root-params` : lit un segment placé avant le layout racine (ici `[lang]`) depuis n'importe quel Server Component, sans prop. Indisponible côté client et dans les Server Actions.
 - **PPR** — Partial Prerendering : coque statique + trous dynamiques remplis en
   streaming via `<Suspense>`.

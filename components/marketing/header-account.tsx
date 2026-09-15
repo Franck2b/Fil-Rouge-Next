@@ -1,6 +1,8 @@
-import Link from "next/link";
 import { buttonClasses } from "@/components/ui/button";
+import { Link } from "@/components/ui/link";
 import { getViewer } from "@/lib/auth";
+import { fill } from "@/lib/i18n/text";
+import { getI18n } from "@/lib/i18n/server";
 
 /**
  * Zone « compte » de l'en-tête vitrine.
@@ -11,7 +13,7 @@ import { getViewer } from "@/lib/auth";
  * un Client Component et n'a de toute façon pas accès à la session.
  */
 export async function HeaderAccount({ variant }: { variant: "desktop" | "mobile" }) {
-  const viewer = await getViewer();
+  const [viewer, { t }] = await Promise.all([getViewer(), getI18n()]);
   const mobile = variant === "mobile";
 
   if (!viewer) {
@@ -23,10 +25,10 @@ export async function HeaderAccount({ variant }: { variant: "desktop" | "mobile"
             mobile ? buttonClasses("secondary", "md") : "text-sm text-ink-soft hover:text-ink"
           }
         >
-          Connexion
+          {t.nav.signIn}
         </Link>
         <Link href="/inscription" className={buttonClasses("primary", mobile ? "md" : "sm")}>
-          Créer un compte
+          {t.nav.signUp}
         </Link>
       </>
     );
@@ -38,10 +40,10 @@ export async function HeaderAccount({ variant }: { variant: "desktop" | "mobile"
   return (
     <>
       <span className={mobile ? "label-tech py-2 text-kraft" : "hidden text-sm text-kraft lg:block"}>
-        {firstName ? `Bonjour, ${firstName}` : viewer.email}
+        {firstName ? fill(t.nav.hello, { name: firstName }) : viewer.email}
       </span>
       <Link href={destination} className={buttonClasses("primary", mobile ? "md" : "sm")}>
-        {viewer.profile.onboarding_completed ? "Mon espace" : "Terminer l'inscription"}
+        {viewer.profile.onboarding_completed ? t.nav.mySpace : t.nav.finishSignUp}
       </Link>
     </>
   );

@@ -1,20 +1,60 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import {
+  DEFAULT_LOCALE,
+  hasLocale,
+  LOCALE_COOKIE,
+  localizePath,
+  stripLocale,
+  type Locale,
+} from "@/lib/i18n/config";
 
 /**
- * proxy.ts (ex-middleware) — deux responsabilités, et deux seulement :
+ * proxy.ts (ex-middleware) — trois responsabilités :
  *
- * 1. rafraîchir le cookie de session Supabase avant que la requête n'atteigne
+ * 1. garantir que chaque URL porte une langue (/fr ou /en) ;
+ * 2. rafraîchir le cookie de session Supabase avant que la requête n'atteigne
  *    un Server Component, qui lui ne peut pas écrire de cookie ;
- * 2. rediriger tôt les visiteurs anonymes pour éviter un aller-retour inutile.
+ * 3. rediriger tôt les visiteurs anonymes pour éviter un aller-retour inutile.
  *
  * Ce n'est PAS la barrière de sécurité : l'autorisation réelle est refaite dans
  * chaque layout protégé (lib/auth.ts) et, en dernier ressort, par les politiques
  * RLS de Postgres.
  */
 const PROTECTED_PREFIXES = ["/tableau-de-bord", "/reservations", "/habilitations", "/parametres", "/reserver", "/onboarding", "/admin"];
+const GUEST_ONLY_PATHS = ["/connexion", "/inscription"];
+
+/** Langue d'un visiteur arrivant sans préfixe : choix mémorisé, sinon navigateur, sinon français. */
+function preferredLocale(request: NextRequest): Locale {
+  const saved = request.cookies.get(LOCALE_COOKIE)?.value;
+  if (hasLocale(saved)) return saved;
+
+  const browser = request.headers
+    .get("accept-language")
+    ?.split(",")[0]
+    ?.trim()
+    .slice(0, 2)
+    .toLowerCase();
+
+  return hasLocale(browser) ? browser : DEFAULT_LOCALE;
+}
 
 export default async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const segment = pathname.split("/")[1];
+
+  if (!hasLocale(segment)) {
+    const localized = request.nextUrl.clone();
+    localized.pathname = localizePath(preferredLocale(request), pathname);
+    return NextResponse.redirect(localized);
+  }
+
+  const locale = segment;
+  const path = stripLocale(pathname);
+
+  // Les Server Actions et les gardes d'accès ne peuvent pas lire le segment
+  // [lang] : on leur expose la langue par cookie, dès cette requête.
+  request.cookies.set(LOCALE_COOKIE, locale);
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -42,28 +82,33 @@ export default async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
   const isProtected = PROTECTED_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+    (prefix) => path === prefix || path.startsWith(`${prefix}/`),
   );
 
   if (!user && isProtected) {
     const login = request.nextUrl.clone();
-    login.pathname = "/connexion";
-    login.search = `?suite=${encodeURIComponent(pathname)}`;
+    login.pathname = localizePath(locale, "/connexion");
+    login.search = `?suite=${encodeURIComponent(path)}`;
     return NextResponse.redirect(login);
   }
 
-  if (user && (pathname === "/connexion" || pathname === "/inscription")) {
+  if (user && GUEST_ONLY_PATHS.includes(path)) {
     const dashboard = request.nextUrl.clone();
-    dashboard.pathname = "/tableau-de-bord";
+    dashboard.pathname = localizePath(locale, "/tableau-de-bord");
     dashboard.search = "";
     return NextResponse.redirect(dashboard);
   }
+
+  response.cookies.set(LOCALE_COOKIE, locale, {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: "lax",
+  });
 
   return response;
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|img/|favicon.ico|robots.txt|sitemap.xml|.*\\.png$).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|img/|favicon.ico|robots.txt|sitemap.xml|.*\\..*).*)"],
 };

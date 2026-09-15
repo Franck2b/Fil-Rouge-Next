@@ -1,37 +1,27 @@
 "use server";
 
-import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
 import { requireOnboardedViewer } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { bookingSchema, fieldErrors } from "@/lib/validation";
 import { failure, success, type ActionState } from "@/lib/actions/types";
 import { slotDate } from "@/lib/booking";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+import { getRequestI18n, redirectTo, revalidateLocalized } from "@/lib/i18n/request";
 
 /** Les erreurs levées par book_machine() sont des codes : on les traduit ici. */
-const BOOKING_ERRORS: Record<string, string> = {
-  CERTIFICATION_REQUIRED:
-    "Votre habilitation pour cette famille de machines n'est pas encore validée.",
-  INSUFFICIENT_CREDITS: "Solde de crédits insuffisant pour ce créneau.",
-  SLOT_TAKEN: "Ce créneau vient d'être pris. Choisissez-en un autre.",
-  SLOT_IN_PAST: "Ce créneau est déjà passé.",
-  MACHINE_UNAVAILABLE: "Cette machine est indisponible pour le moment.",
-  MACHINE_NOT_FOUND: "Cette machine n'existe plus.",
-  INVALID_RANGE: "Durée invalide.",
-};
-
-function translateBookingError(message: string) {
-  const code = Object.keys(BOOKING_ERRORS).find((key) => message.includes(key));
-  return code ? BOOKING_ERRORS[code] : "La réservation a échoué. Réessayez.";
+function translateBookingError(message: string, t: Dictionary["actions"]) {
+  const codes = Object.keys(t.bookingErrors) as (keyof typeof t.bookingErrors)[];
+  const code = codes.find((key) => message.includes(key));
+  return code ? t.bookingErrors[code] : t.bookingFailed;
 }
 
 export async function createBookingAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await requireOnboardedViewer();
+  const [, { locale, t }] = await Promise.all([requireOnboardedViewer(), getRequestI18n()]);
 
-  const parsed = bookingSchema.safeParse({
+  const parsed = bookingSchema(t.validation).safeParse({
     machineId: formData.get("machineId"),
     date: formData.get("date"),
     startHour: formData.get("startHour"),
@@ -40,7 +30,7 @@ export async function createBookingAction(
   });
 
   if (!parsed.success) {
-    return failure("Créneau invalide, reprenez la sélection.", fieldErrors(parsed.error));
+    return failure(t.actions.invalidSlot, fieldErrors(parsed.error));
   }
 
   const { machineId, date, startHour, duration, project } = parsed.data;
@@ -57,38 +47,34 @@ export async function createBookingAction(
     p_project: project,
   });
 
-  if (error) return failure(translateBookingError(error.message));
+  if (error) return failure(translateBookingError(error.message, t.actions));
 
-  revalidatePath("/tableau-de-bord");
-  revalidatePath("/reservations");
-  redirect(`/reservations/${data as string}?nouveau=1`);
+  revalidateLocalized("/tableau-de-bord");
+  revalidateLocalized("/reservations");
+  redirectTo(locale, `/reservations/${data as string}?nouveau=1`);
 }
 
 export async function cancelBookingAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await requireOnboardedViewer();
+  const [, { t }] = await Promise.all([requireOnboardedViewer(), getRequestI18n()]);
 
   const bookingId = String(formData.get("bookingId") ?? "");
-  if (!bookingId) return failure("Réservation introuvable.");
+  if (!bookingId) return failure(t.actions.bookingNotFound);
 
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("cancel_booking", { p_booking_id: bookingId });
 
   if (error) {
-    if (error.message.includes("NOT_CANCELLABLE")) {
-      return failure("Cette réservation n'est plus annulable.");
-    }
-    if (error.message.includes("FORBIDDEN")) {
-      return failure("Vous ne pouvez pas annuler cette réservation.");
-    }
-    return failure("L'annulation a échoué. Réessayez.");
+    if (error.message.includes("NOT_CANCELLABLE")) return failure(t.actions.notCancellable);
+    if (error.message.includes("FORBIDDEN")) return failure(t.actions.cancelForbidden);
+    return failure(t.actions.cancelFailed);
   }
 
-  revalidatePath("/tableau-de-bord");
-  revalidatePath("/reservations");
-  revalidatePath(`/reservations/${bookingId}`);
+  revalidateLocalized("/tableau-de-bord");
+  revalidateLocalized("/reservations");
+  revalidateLocalized(`/reservations/${bookingId}`);
 
-  return success("Réservation annulée. Les crédits éligibles ont été recrédités.");
+  return success(t.actions.cancelled);
 }

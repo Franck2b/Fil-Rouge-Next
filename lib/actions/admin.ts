@@ -1,30 +1,40 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { fieldErrors } from "@/lib/validation";
 import { revalidateCatalog } from "@/lib/data/tags";
 import { failure, success, type ActionState } from "@/lib/actions/types";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+import { getRequestI18n, revalidateLocalized } from "@/lib/i18n/request";
+import { fill } from "@/lib/i18n/text";
 
-const reviewSchema = z.object({
-  certificationId: z.uuid(),
-  decision: z.enum(["approved", "rejected"]),
-  note: z.string().trim().max(280, "280 caractères maximum.").optional().default(""),
-});
+type Messages = Dictionary["validation"];
 
-const machineSchema = z.object({
-  machineId: z.uuid(),
-  status: z.enum(["available", "maintenance", "retired"]),
-  hourlyCredits: z.coerce.number().int().min(1, "Minimum 1 crédit.").max(20, "Maximum 20 crédits."),
-});
+function reviewSchema(m: Messages) {
+  return z.object({
+    certificationId: z.uuid(),
+    decision: z.enum(["approved", "rejected"]),
+    note: z.string().trim().max(280, m.max280).optional().default(""),
+  });
+}
 
-const creditsSchema = z.object({
-  memberId: z.uuid(),
-  delta: z.coerce.number().int().refine((value) => value !== 0, "Indiquez un montant non nul."),
-  reason: z.string().trim().min(3, "Précisez un motif."),
-});
+function machineSchema(m: Messages) {
+  return z.object({
+    machineId: z.uuid(),
+    status: z.enum(["available", "maintenance", "retired"]),
+    hourlyCredits: z.coerce.number().int().min(1, m.minCredit).max(20, m.maxCredits),
+  });
+}
+
+function creditsSchema(m: Messages) {
+  return z.object({
+    memberId: z.uuid(),
+    delta: z.coerce.number().int().refine((value) => value !== 0, m.nonZero),
+    reason: z.string().trim().min(3, m.reason),
+  });
+}
 
 const bookingStatusSchema = z.object({
   bookingId: z.uuid(),
@@ -36,16 +46,16 @@ export async function reviewCertificationAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const admin = await requireAdmin();
+  const [admin, { t }] = await Promise.all([requireAdmin(), getRequestI18n()]);
 
-  const parsed = reviewSchema.safeParse({
+  const parsed = reviewSchema(t.validation).safeParse({
     certificationId: formData.get("certificationId"),
     decision: formData.get("decision"),
     note: formData.get("note") ?? "",
   });
 
   if (!parsed.success) {
-    return failure("Décision invalide.", fieldErrors(parsed.error));
+    return failure(t.actions.invalidDecision, fieldErrors(parsed.error));
   }
 
   const supabase = await createSupabaseServerClient();
@@ -59,13 +69,15 @@ export async function reviewCertificationAction(
     })
     .eq("id", parsed.data.certificationId);
 
-  if (error) return failure("La décision n'a pas pu être enregistrée.");
+  if (error) return failure(t.actions.decisionFailed);
 
-  revalidatePath("/admin");
-  revalidatePath("/admin/habilitations");
+  revalidateLocalized("/admin");
+  revalidateLocalized("/admin/habilitations");
 
   return success(
-    parsed.data.decision === "approved" ? "Habilitation validée." : "Demande refusée.",
+    parsed.data.decision === "approved"
+      ? t.actions.certificationApproved
+      : t.actions.certificationRejected,
   );
 }
 
@@ -78,16 +90,16 @@ export async function updateMachineAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await requireAdmin();
+  const [, { t }] = await Promise.all([requireAdmin(), getRequestI18n()]);
 
-  const parsed = machineSchema.safeParse({
+  const parsed = machineSchema(t.validation).safeParse({
     machineId: formData.get("machineId"),
     status: formData.get("status"),
     hourlyCredits: formData.get("hourlyCredits"),
   });
 
   if (!parsed.success) {
-    return failure("Vérifiez les champs signalés.", fieldErrors(parsed.error));
+    return failure(t.actions.checkFields, fieldErrors(parsed.error));
   }
 
   const supabase = await createSupabaseServerClient();
@@ -96,12 +108,12 @@ export async function updateMachineAction(
     .update({ status: parsed.data.status, hourly_credits: parsed.data.hourlyCredits })
     .eq("id", parsed.data.machineId);
 
-  if (error) return failure("La machine n'a pas pu être modifiée.");
+  if (error) return failure(t.actions.machineFailed);
 
   revalidateCatalog();
-  revalidatePath("/admin/machines");
+  revalidateLocalized("/admin/machines");
 
-  return success("Machine mise à jour. Le catalogue public est actualisé.");
+  return success(t.actions.machineUpdated);
 }
 
 /** Créditer ou débiter un membre, en gardant une trace dans l'historique. */
@@ -109,16 +121,16 @@ export async function adjustCreditsAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await requireAdmin();
+  const [, { t }] = await Promise.all([requireAdmin(), getRequestI18n()]);
 
-  const parsed = creditsSchema.safeParse({
+  const parsed = creditsSchema(t.validation).safeParse({
     memberId: formData.get("memberId"),
     delta: formData.get("delta"),
     reason: formData.get("reason"),
   });
 
   if (!parsed.success) {
-    return failure("Vérifiez les champs signalés.", fieldErrors(parsed.error));
+    return failure(t.actions.checkFields, fieldErrors(parsed.error));
   }
 
   const supabase = await createSupabaseServerClient();
@@ -129,18 +141,18 @@ export async function adjustCreditsAction(
     .eq("id", parsed.data.memberId)
     .maybeSingle();
 
-  if (!member) return failure("Membre introuvable.");
+  if (!member) return failure(t.actions.memberNotFound);
 
   const nextBalance = (member.credits_balance as number) + parsed.data.delta;
 
-  if (nextBalance < 0) return failure("Le solde ne peut pas devenir négatif.");
+  if (nextBalance < 0) return failure(t.actions.negativeBalance);
 
   const { error: updateError } = await supabase
     .from("profiles")
     .update({ credits_balance: nextBalance })
     .eq("id", parsed.data.memberId);
 
-  if (updateError) return failure("Le solde n'a pas pu être modifié.");
+  if (updateError) return failure(t.actions.balanceFailed);
 
   await supabase.from("credit_transactions").insert({
     user_id: parsed.data.memberId,
@@ -148,9 +160,9 @@ export async function adjustCreditsAction(
     reason: parsed.data.reason,
   });
 
-  revalidatePath("/admin/membres");
+  revalidateLocalized("/admin/membres");
 
-  return success(`Solde ajusté : ${nextBalance} crédits.`);
+  return success(fill(t.actions.balanceAdjusted, { count: nextBalance }));
 }
 
 /** Changement d'état d'une réservation depuis le back-office (session honorée, no-show…). */
@@ -158,14 +170,14 @@ export async function updateBookingStatusAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await requireAdmin();
+  const [, { t }] = await Promise.all([requireAdmin(), getRequestI18n()]);
 
   const parsed = bookingStatusSchema.safeParse({
     bookingId: formData.get("bookingId"),
     status: formData.get("status"),
   });
 
-  if (!parsed.success) return failure("Statut invalide.");
+  if (!parsed.success) return failure(t.actions.invalidStatus);
 
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase
@@ -173,10 +185,10 @@ export async function updateBookingStatusAction(
     .update({ status: parsed.data.status })
     .eq("id", parsed.data.bookingId);
 
-  if (error) return failure("Le statut n'a pas pu être modifié.");
+  if (error) return failure(t.actions.statusFailed);
 
-  revalidatePath("/admin/reservations");
-  revalidatePath("/admin");
+  revalidateLocalized("/admin/reservations");
+  revalidateLocalized("/admin");
 
-  return success("Statut mis à jour.");
+  return success(t.actions.statusUpdated);
 }

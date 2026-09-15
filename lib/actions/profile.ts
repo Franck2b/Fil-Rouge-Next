@@ -1,24 +1,24 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { requireOnboardedViewer } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { fieldErrors, passwordSchema, preferencesSchema, profileSchema } from "@/lib/validation";
 import { failure, success, type ActionState } from "@/lib/actions/types";
+import { getRequestI18n, revalidateLocalized } from "@/lib/i18n/request";
 
 export async function updateProfileAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const viewer = await requireOnboardedViewer();
+  const [viewer, { t }] = await Promise.all([requireOnboardedViewer(), getRequestI18n()]);
 
-  const parsed = profileSchema.safeParse({
+  const parsed = profileSchema(t.validation).safeParse({
     fullName: formData.get("fullName"),
     phone: formData.get("phone") ?? "",
   });
 
   if (!parsed.success) {
-    return failure("Vérifiez les champs signalés.", fieldErrors(parsed.error));
+    return failure(t.actions.checkFields, fieldErrors(parsed.error));
   }
 
   const supabase = await createSupabaseServerClient();
@@ -27,28 +27,28 @@ export async function updateProfileAction(
     .update({ full_name: parsed.data.fullName, phone: parsed.data.phone || null })
     .eq("id", viewer.userId);
 
-  if (error) return failure("Enregistrement impossible. Réessayez.");
+  if (error) return failure(t.actions.saveFailed);
 
   // Le nom apparaît dans l'en-tête du layout : il faut revalider tout l'espace.
-  revalidatePath("/parametres");
-  revalidatePath("/tableau-de-bord");
+  revalidateLocalized("/parametres");
+  revalidateLocalized("/tableau-de-bord");
 
-  return success("Profil mis à jour.");
+  return success(t.actions.profileUpdated);
 }
 
 export async function updatePreferencesAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const viewer = await requireOnboardedViewer();
+  const [viewer, { t }] = await Promise.all([requireOnboardedViewer(), getRequestI18n()]);
 
-  const parsed = preferencesSchema.safeParse({
+  const parsed = preferencesSchema(t.validation).safeParse({
     homeWorkshopId: formData.get("homeWorkshopId"),
     emailNotifications: formData.get("emailNotifications") === "on",
   });
 
   if (!parsed.success) {
-    return failure("Vérifiez les champs signalés.", fieldErrors(parsed.error));
+    return failure(t.actions.checkFields, fieldErrors(parsed.error));
   }
 
   const supabase = await createSupabaseServerClient();
@@ -60,32 +60,32 @@ export async function updatePreferencesAction(
     })
     .eq("id", viewer.userId);
 
-  if (error) return failure("Enregistrement impossible. Réessayez.");
+  if (error) return failure(t.actions.saveFailed);
 
-  revalidatePath("/parametres/preferences");
+  revalidateLocalized("/parametres/preferences");
 
-  return success("Préférences enregistrées.");
+  return success(t.actions.preferencesSaved);
 }
 
 export async function updatePasswordAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await requireOnboardedViewer();
+  const [, { t }] = await Promise.all([requireOnboardedViewer(), getRequestI18n()]);
 
-  const parsed = passwordSchema.safeParse({
+  const parsed = passwordSchema(t.validation).safeParse({
     password: formData.get("password"),
     confirm: formData.get("confirm"),
   });
 
   if (!parsed.success) {
-    return failure("Vérifiez les champs signalés.", fieldErrors(parsed.error));
+    return failure(t.actions.checkFields, fieldErrors(parsed.error));
   }
 
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
 
-  if (error) return failure("Le mot de passe n'a pas pu être modifié.");
+  if (error) return failure(t.actions.passwordFailed);
 
-  return success("Mot de passe modifié.");
+  return success(t.actions.passwordUpdated);
 }

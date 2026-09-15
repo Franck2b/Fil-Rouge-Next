@@ -6,12 +6,19 @@ import { Field, Select, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { requestCertificationAction } from "@/lib/actions/certifications";
 import { IDLE, type ActionState } from "@/lib/actions/types";
-import { CATEGORY_LABELS, type MachineCategory } from "@/lib/types";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+import type { MachineCategory } from "@/lib/types";
 
 export function CertificationRequestForm({
   availableCategories,
+  t,
+  categories,
+  sendingLabel,
 }: {
   availableCategories: MachineCategory[];
+  t: Dictionary["app"]["certifications"];
+  categories: Dictionary["categories"];
+  sendingLabel: string;
 }) {
   const [state, action] = useActionState<ActionState, FormData>(
     requestCertificationAction,
@@ -20,8 +27,8 @@ export function CertificationRequestForm({
 
   if (availableCategories.length === 0) {
     return (
-      <Alert tone="success" title="Parc entièrement débloqué">
-        Vous avez une demande ou une habilitation sur chacune des six familles de machines.
+      <Alert tone="success" title={t.allUnlockedTitle}>
+        {t.allUnlockedText}
       </Alert>
     );
   }
@@ -35,29 +42,29 @@ export function CertificationRequestForm({
         <Alert tone="success">{state.message}</Alert>
       ) : null}
 
-      <Field label="Famille de machines" htmlFor="category" error={state.fieldErrors?.category}>
+      <Field label={t.family} htmlFor="category" error={state.fieldErrors?.category}>
         <Select id="category" name="category" defaultValue="" required>
           <option value="" disabled>
-            Choisir une famille
+            {t.chooseFamily}
           </option>
           {availableCategories.map((category) => (
             <option key={category} value={category}>
-              {CATEGORY_LABELS[category]}
+              {categories[category].label}
             </option>
           ))}
         </Select>
       </Field>
 
       <Field
-        label="Votre expérience"
+        label={t.experience}
         htmlFor="motivation"
-        hint="Machines déjà pratiquées, formation suivie, projet visé. 20 caractères minimum."
+        hint={t.experienceHint}
         error={state.fieldErrors?.motivation}
       >
         <Textarea id="motivation" name="motivation" rows={5} required minLength={20} />
       </Field>
 
-      <SubmitButton pendingLabel="Envoi…">Envoyer la demande</SubmitButton>
+      <SubmitButton pendingLabel={sendingLabel}>{t.submit}</SubmitButton>
     </form>
   );
 }

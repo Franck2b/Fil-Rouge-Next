@@ -6,8 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { reviewCertificationAction } from "@/lib/actions/admin";
 import { IDLE, type ActionState } from "@/lib/actions/types";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
-export function CertificationReview({ certificationId }: { certificationId: string }) {
+export function CertificationReview({
+  certificationId,
+  t,
+}: {
+  certificationId: string;
+  t: Dictionary["admin"]["certifications"];
+}) {
   const [state, action] = useActionState<ActionState, FormData>(
     reviewCertificationAction,
     IDLE,
@@ -26,25 +33,25 @@ export function CertificationReview({ certificationId }: { certificationId: stri
       ) : null}
 
       <Field
-        label="Note au membre"
+        label={t.note}
         htmlFor={`note-${certificationId}`}
-        hint="Visible par le membre : rappel de sécurité, créneau de prise en main, motif du refus."
+        hint={t.noteHint}
         error={state.fieldErrors?.note}
       >
         <Input
           id={`note-${certificationId}`}
           name="note"
           maxLength={280}
-          placeholder="Prise en main prévue samedi 10 h avec Salomé."
+          placeholder={t.notePlaceholder}
         />
       </Field>
 
       <div className="flex flex-wrap gap-2">
         <Button type="submit" name="decision" value="approved" size="sm">
-          Valider l&apos;habilitation
+          {t.approve}
         </Button>
         <Button type="submit" name="decision" value="rejected" variant="danger" size="sm">
-          Refuser
+          {t.reject}
         </Button>
       </div>
     </form>

@@ -1,20 +1,28 @@
 // Types du domaine, alignés sur supabase/migrations/0001_init.sql.
 // Écrits à la main plutôt que générés : le schéma est petit et rester maître
 // de ces types évite de dépendre d'une étape de génération pour builder.
+// Les libellés affichés vivent dans les dictionnaires (lib/i18n/dictionaries).
 
 export type UserRole = "member" | "admin";
 
-export type MachineCategory =
-  | "laser"
-  | "impression_3d"
-  | "bois"
-  | "metal"
-  | "textile"
-  | "electronique";
+export const MACHINE_CATEGORY_VALUES = [
+  "laser",
+  "impression_3d",
+  "bois",
+  "metal",
+  "textile",
+  "electronique",
+] as const;
 
-export type MachineStatus = "available" | "maintenance" | "retired";
+export type MachineCategory = (typeof MACHINE_CATEGORY_VALUES)[number];
+
+export const MACHINE_STATUS_VALUES = ["available", "maintenance", "retired"] as const;
+export type MachineStatus = (typeof MACHINE_STATUS_VALUES)[number];
+
+export const BOOKING_STATUS_VALUES = ["pending", "confirmed", "cancelled", "completed"] as const;
+export type BookingStatus = (typeof BOOKING_STATUS_VALUES)[number];
+
 export type CertificationStatus = "pending" | "approved" | "rejected";
-export type BookingStatus = "pending" | "confirmed" | "cancelled" | "completed";
 
 export type Workshop = {
   id: string;
@@ -98,34 +106,6 @@ export type CreditTransaction = {
   created_at: string;
 };
 
-export const MACHINE_CATEGORIES: { value: MachineCategory; label: string; blurb: string }[] = [
-  { value: "laser", label: "Découpe laser", blurb: "Découpe et gravure CO₂" },
-  { value: "impression_3d", label: "Impression 3D", blurb: "FDM, du prototype à la petite série" },
-  { value: "bois", label: "Bois", blurb: "Scie, toupie, CNC grand format" },
-  { value: "metal", label: "Métal", blurb: "Tournage, fraisage, soudure" },
-  { value: "textile", label: "Textile", blurb: "Piquage, broderie, coupe" },
-  { value: "electronique", label: "Électronique", blurb: "Brasage, mesure, debug" },
-];
-
-export const CATEGORY_LABELS = Object.fromEntries(
-  MACHINE_CATEGORIES.map((c) => [c.value, c.label]),
-) as Record<MachineCategory, string>;
-
-export const MACHINE_STATUS_LABELS: Record<MachineStatus, string> = {
-  available: "Disponible",
-  maintenance: "En maintenance",
-  retired: "Retirée du parc",
-};
-
-export const BOOKING_STATUS_LABELS: Record<BookingStatus, string> = {
-  pending: "En attente",
-  confirmed: "Confirmée",
-  cancelled: "Annulée",
-  completed: "Terminée",
-};
-
-export const CERTIFICATION_STATUS_LABELS: Record<CertificationStatus, string> = {
-  pending: "En cours d'examen",
-  approved: "Validée",
-  rejected: "Refusée",
-};
+export function isBookingStatus(value: string): value is BookingStatus {
+  return (BOOKING_STATUS_VALUES as readonly string[]).includes(value);
+}

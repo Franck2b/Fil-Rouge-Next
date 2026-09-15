@@ -1,26 +1,7 @@
-import Link from "next/link";
 import { cacheLife } from "next/cache";
 import { Logo } from "@/components/logo";
-
-const COLUMNS = [
-  {
-    title: "Produit",
-    links: [
-      { href: "/equipements", label: "Le parc machines" },
-      { href: "/ateliers", label: "Nos ateliers" },
-      { href: "/tarifs", label: "Tarifs & crédits" },
-      { href: "/faq", label: "Questions fréquentes" },
-    ],
-  },
-  {
-    title: "Compte",
-    links: [
-      { href: "/inscription", label: "Créer un compte" },
-      { href: "/connexion", label: "Se connecter" },
-      { href: "/tableau-de-bord", label: "Mon espace" },
-    ],
-  },
-];
+import { Link } from "@/components/ui/link";
+import { getI18n } from "@/lib/i18n/server";
 
 /**
  * L'année courante est une valeur instable : sous Cache Components, la lire
@@ -34,19 +15,38 @@ async function CurrentYear() {
   return <>{new Date().getFullYear()}</>;
 }
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const { t } = await getI18n();
+
+  const columns = [
+    {
+      title: t.footer.product,
+      links: [
+        { href: "/equipements", label: t.footer.machines },
+        { href: "/ateliers", label: t.footer.workshops },
+        { href: "/tarifs", label: t.footer.pricing },
+        { href: "/faq", label: t.footer.faq },
+      ],
+    },
+    {
+      title: t.footer.account,
+      links: [
+        { href: "/inscription", label: t.footer.signUp },
+        { href: "/connexion", label: t.footer.signIn },
+        { href: "/tableau-de-bord", label: t.footer.mySpace },
+      ],
+    },
+  ];
+
   return (
     <footer className="grid-plan border-t border-ink/20 bg-ink text-bone">
       <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 md:grid-cols-[2fr_1fr_1fr]">
         <div>
           <Logo tone="paper" />
-          <p className="mt-4 max-w-xs text-sm text-bone/60">
-            Un réseau d&apos;ateliers partagés où l&apos;on réserve une machine comme on réserve
-            une salle : à l&apos;heure, sans abonnement, avec une habilitation encadrée.
-          </p>
+          <p className="mt-4 max-w-xs text-sm text-bone/60">{t.footer.tagline}</p>
         </div>
 
-        {COLUMNS.map((column) => (
+        {columns.map((column) => (
           <div key={column.title}>
             <p className="label-tech text-kraft">{column.title}</p>
             <ul className="mt-4 space-y-2.5">
@@ -64,8 +64,10 @@ export function SiteFooter() {
 
       <div className="border-t border-bone/10">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 py-5 text-xs text-bone/40 sm:flex-row sm:items-center sm:justify-between">
-          <p>© <CurrentYear /> Gabarit — projet pédagogique M2 EEMI.</p>
-          <p className="label-tech">Paris · Lyon · Nantes</p>
+          <p>
+            © <CurrentYear /> {t.footer.copyright}
+          </p>
+          <p className="label-tech">{t.footer.cities}</p>
         </div>
       </div>
     </footer>

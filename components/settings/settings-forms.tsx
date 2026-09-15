@@ -10,7 +10,10 @@ import {
   updateProfileAction,
 } from "@/lib/actions/profile";
 import { IDLE, type ActionState } from "@/lib/actions/types";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Profile, Workshop } from "@/lib/types";
+
+type FormCopy = Dictionary["app"]["settings"]["form"];
 
 function Feedback({ state }: { state: ActionState }) {
   if (state.status === "success" && state.message) {
@@ -22,26 +25,34 @@ function Feedback({ state }: { state: ActionState }) {
   return null;
 }
 
-export function ProfileForm({ profile, email }: { profile: Profile; email: string }) {
+export function ProfileForm({
+  profile,
+  email,
+  t,
+}: {
+  profile: Profile;
+  email: string;
+  t: FormCopy;
+}) {
   const [state, action] = useActionState<ActionState, FormData>(updateProfileAction, IDLE);
 
   return (
     <form action={action} className="space-y-6" noValidate>
       <Feedback state={state} />
 
-      <Field label="Adresse e-mail" htmlFor="email" hint="L'e-mail de connexion n'est pas modifiable ici.">
+      <Field label={t.email} htmlFor="email" hint={t.emailHint}>
         <Input id="email" defaultValue={email} disabled />
       </Field>
 
-      <Field label="Nom complet" htmlFor="fullName" error={state.fieldErrors?.fullName}>
+      <Field label={t.fullName} htmlFor="fullName" error={state.fieldErrors?.fullName}>
         <Input id="fullName" name="fullName" defaultValue={profile.full_name} required />
       </Field>
 
-      <Field label="Téléphone" htmlFor="phone" error={state.fieldErrors?.phone}>
+      <Field label={t.phone} htmlFor="phone" error={state.fieldErrors?.phone}>
         <Input id="phone" name="phone" type="tel" defaultValue={profile.phone ?? ""} />
       </Field>
 
-      <SubmitButton pendingLabel="Enregistrement…">Enregistrer</SubmitButton>
+      <SubmitButton pendingLabel={t.saving}>{t.save}</SubmitButton>
     </form>
   );
 }
@@ -49,9 +60,11 @@ export function ProfileForm({ profile, email }: { profile: Profile; email: strin
 export function PreferencesForm({
   profile,
   workshops,
+  t,
 }: {
   profile: Profile;
   workshops: Workshop[];
+  t: FormCopy;
 }) {
   const [state, action] = useActionState<ActionState, FormData>(updatePreferencesAction, IDLE);
 
@@ -60,9 +73,9 @@ export function PreferencesForm({
       <Feedback state={state} />
 
       <Field
-        label="Atelier de rattachement"
+        label={t.homeWorkshop}
         htmlFor="homeWorkshopId"
-        hint="Utilisé pour trier le parc et pré-remplir vos réservations."
+        hint={t.homeWorkshopHint}
         error={state.fieldErrors?.homeWorkshopId}
       >
         <Select
@@ -72,7 +85,7 @@ export function PreferencesForm({
           required
         >
           <option value="" disabled>
-            Choisir un atelier
+            {t.chooseWorkshop}
           </option>
           {workshops.map((workshop) => (
             <option key={workshop.id} value={workshop.id}>
@@ -90,19 +103,17 @@ export function PreferencesForm({
           className="mt-1 h-4 w-4 accent-[var(--color-rust)]"
         />
         <span>
-          <span className="block text-sm font-medium">Alertes par e-mail</span>
-          <span className="mt-1 block text-sm text-ink-soft">
-            Rappel 24 h avant un créneau et information en cas de machine mise en maintenance.
-          </span>
+          <span className="block text-sm font-medium">{t.notifications}</span>
+          <span className="mt-1 block text-sm text-ink-soft">{t.notificationsHint}</span>
         </span>
       </label>
 
-      <SubmitButton pendingLabel="Enregistrement…">Enregistrer</SubmitButton>
+      <SubmitButton pendingLabel={t.saving}>{t.save}</SubmitButton>
     </form>
   );
 }
 
-export function PasswordForm() {
+export function PasswordForm({ t }: { t: FormCopy }) {
   const [state, action] = useActionState<ActionState, FormData>(updatePasswordAction, IDLE);
 
   return (
@@ -110,9 +121,9 @@ export function PasswordForm() {
       <Feedback state={state} />
 
       <Field
-        label="Nouveau mot de passe"
+        label={t.newPassword}
         htmlFor="password"
-        hint="8 caractères minimum."
+        hint={t.passwordHint}
         error={state.fieldErrors?.password}
       >
         <Input
@@ -125,7 +136,7 @@ export function PasswordForm() {
         />
       </Field>
 
-      <Field label="Confirmation" htmlFor="confirm" error={state.fieldErrors?.confirm}>
+      <Field label={t.confirm} htmlFor="confirm" error={state.fieldErrors?.confirm}>
         <Input
           id="confirm"
           name="confirm"
@@ -136,7 +147,7 @@ export function PasswordForm() {
         />
       </Field>
 
-      <SubmitButton pendingLabel="Modification…">Modifier le mot de passe</SubmitButton>
+      <SubmitButton pendingLabel={t.updatingPassword}>{t.updatePassword}</SubmitButton>
     </form>
   );
 }

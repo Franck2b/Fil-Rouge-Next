@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/components/ui/link";
 
 /**
  * Marque : un gabarit — la plaque de traçage, sa découpe intérieure et les

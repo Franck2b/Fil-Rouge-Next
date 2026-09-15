@@ -1,12 +1,16 @@
-const STEPS = [
-  { n: 1, label: "Votre profil" },
-  { n: 2, label: "Habilitation" },
-];
+import { getI18n } from "@/lib/i18n/server";
 
-export function OnboardingSteps({ current }: { current: 1 | 2 }) {
+export async function OnboardingSteps({ current }: { current: 1 | 2 }) {
+  const { t } = await getI18n();
+
+  const steps = [
+    { n: 1, label: t.onboarding.steps.profile },
+    { n: 2, label: t.onboarding.steps.certification },
+  ];
+
   return (
     <ol className="flex items-center gap-px border border-line bg-line">
-      {STEPS.map((step) => {
+      {steps.map((step) => {
         const done = step.n < current;
         const active = step.n === current;
 

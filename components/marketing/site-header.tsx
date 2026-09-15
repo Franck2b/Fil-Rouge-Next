@@ -1,39 +1,44 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Logo } from "@/components/logo";
+import { Link } from "@/components/ui/link";
+import { LocaleSwitcher } from "@/components/ui/locale-switcher";
+import { stripLocale } from "@/lib/i18n/config";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 /**
  * Client Component assumé : il gère l'ouverture du menu mobile et met en avant
- * la route courante via usePathname(). Le reste de la vitrine reste serveur.
+ * la route courante via usePathname(). Ses textes arrivent en props depuis le
+ * layout serveur, seul à pouvoir lire le dictionnaire.
  */
-const LINKS = [
-  { href: "/ateliers", label: "Ateliers" },
-  { href: "/equipements", label: "Équipements" },
-  { href: "/tarifs", label: "Tarifs" },
-  { href: "/faq", label: "FAQ" },
-];
-
 export function SiteHeader({
+  t,
   account,
   accountMobile,
 }: {
+  t: Dictionary["nav"];
   account: ReactNode;
   accountMobile: ReactNode;
 }) {
-  const pathname = usePathname();
+  const pathname = stripLocale(usePathname());
   const [open, setOpen] = useState(false);
+
+  const links = [
+    { href: "/ateliers", label: t.workshops },
+    { href: "/equipements", label: t.machines },
+    { href: "/tarifs", label: t.pricing },
+    { href: "/faq", label: t.faq },
+  ];
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-bone/95 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
         <Logo />
 
-        <nav aria-label="Navigation principale" className="hidden items-center gap-7 md:flex">
-          {LINKS.map((link) => {
+        <nav aria-label={t.main} className="hidden items-center gap-7 md:flex">
+          {links.map((link) => {
             const active = pathname.startsWith(link.href);
             return (
               <Link
@@ -50,24 +55,30 @@ export function SiteHeader({
           })}
         </nav>
 
-        <div className="hidden items-center gap-3 md:flex">{account}</div>
+        <div className="hidden items-center gap-3 md:flex">
+          <LocaleSwitcher />
+          {account}
+        </div>
 
-        <button
-          type="button"
-          onClick={() => setOpen((value) => !value)}
-          aria-expanded={open}
-          aria-controls="menu-mobile"
-          className="border border-line px-3 py-2 md:hidden"
-        >
-          <span className="label-tech">{open ? "Fermer" : "Menu"}</span>
-        </button>
+        <div className="flex items-center gap-2 md:hidden">
+          <LocaleSwitcher />
+          <button
+            type="button"
+            onClick={() => setOpen((value) => !value)}
+            aria-expanded={open}
+            aria-controls="menu-mobile"
+            className="border border-line px-3 py-2"
+          >
+            <span className="label-tech">{open ? t.close : t.menu}</span>
+          </button>
+        </div>
       </div>
 
       {open ? (
         <div id="menu-mobile" className="border-t border-line bg-paper md:hidden">
-          <nav aria-label="Navigation mobile" className="mx-auto max-w-6xl px-5 py-4">
+          <nav aria-label={t.mobile} className="mx-auto max-w-6xl px-5 py-4">
             <ul className="space-y-1">
-              {LINKS.map((link) => (
+              {links.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}

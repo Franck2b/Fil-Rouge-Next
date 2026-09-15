@@ -1,23 +1,25 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Link } from "@/components/ui/link";
+import { stripLocale } from "@/lib/i18n/config";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
-const LINKS = [
-  { href: "/admin", label: "Vue d'ensemble" },
-  { href: "/admin/habilitations", label: "Habilitations" },
-  { href: "/admin/reservations", label: "Réservations" },
-  { href: "/admin/machines", label: "Parc machines" },
-  { href: "/admin/membres", label: "Membres" },
-];
+export function AdminNav({ t }: { t: Dictionary["admin"]["nav"] }) {
+  const pathname = stripLocale(usePathname());
 
-export function AdminNav() {
-  const pathname = usePathname();
+  const links = [
+    { href: "/admin", label: t.overview },
+    { href: "/admin/habilitations", label: t.certifications },
+    { href: "/admin/reservations", label: t.bookings },
+    { href: "/admin/machines", label: t.machines },
+    { href: "/admin/membres", label: t.members },
+  ];
 
   return (
-    <nav aria-label="Navigation du back-office">
+    <nav aria-label={t.label}>
       <ul className="flex gap-px overflow-x-auto border border-bone/15 bg-bone/15 lg:flex-col lg:overflow-visible">
-        {LINKS.map((link) => {
+        {links.map((link) => {
           const active =
             link.href === "/admin" ? pathname === "/admin" : pathname.startsWith(link.href);
 

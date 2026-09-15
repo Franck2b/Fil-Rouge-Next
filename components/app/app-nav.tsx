@@ -1,25 +1,26 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Link } from "@/components/ui/link";
+import { stripLocale } from "@/lib/i18n/config";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 /** Client Component : seul usePathname permet de marquer la route courante. */
-const LINKS = [
-  { href: "/tableau-de-bord", label: "Tableau de bord" },
-  { href: "/reservations", label: "Mes réservations" },
-  { href: "/habilitations", label: "Mes habilitations" },
-  { href: "/parametres", label: "Paramètres" },
-];
+export function AppNav({ isAdmin, t }: { isAdmin: boolean; t: Dictionary["app"]["nav"] }) {
+  const pathname = stripLocale(usePathname());
 
-export function AppNav({ isAdmin }: { isAdmin: boolean }) {
-  const pathname = usePathname();
+  const links = [
+    { href: "/tableau-de-bord", label: t.dashboard },
+    { href: "/reservations", label: t.bookings },
+    { href: "/habilitations", label: t.certifications },
+    { href: "/parametres", label: t.settings },
+  ];
 
   return (
-    <nav aria-label="Navigation de l'espace membre">
+    <nav aria-label={t.label}>
       <ul className="space-y-px">
-        {LINKS.map((link) => {
-          const active =
-            pathname === link.href || pathname.startsWith(`${link.href}/`);
+        {links.map((link) => {
+          const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
 
           return (
             <li key={link.href}>
@@ -41,7 +42,7 @@ export function AppNav({ isAdmin }: { isAdmin: boolean }) {
 
       {isAdmin ? (
         <div className="mt-8 border-t border-line pt-6">
-          <p className="label-tech px-4 text-kraft">Back-office</p>
+          <p className="label-tech px-4 text-kraft">{t.backOffice}</p>
           <Link
             href="/admin"
             className={`mt-2 block border-l-2 px-4 py-2.5 text-sm transition-colors ${
@@ -50,7 +51,7 @@ export function AppNav({ isAdmin }: { isAdmin: boolean }) {
                 : "border-transparent text-ink-soft hover:border-line hover:text-ink"
             }`}
           >
-            Administration
+            {t.admin}
           </Link>
         </div>
       ) : null}

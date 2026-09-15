@@ -1,19 +1,20 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Field, Input } from "@/components/ui/field";
+import { Link } from "@/components/ui/link";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { signInAction, signUpAction } from "@/lib/actions/auth";
 import { IDLE, type ActionState } from "@/lib/actions/types";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 /**
  * Client Component : useActionState a besoin du navigateur pour conserver le
  * retour de la Server Action et l'état « en cours d'envoi ». La logique de
  * connexion, elle, reste intégralement côté serveur.
  */
-export function SignInForm({ suite }: { suite: string }) {
+export function SignInForm({ suite, t }: { suite: string; t: Dictionary["auth"]["form"] }) {
   const [state, action] = useActionState<ActionState, FormData>(signInAction, IDLE);
 
   return (
@@ -24,7 +25,7 @@ export function SignInForm({ suite }: { suite: string }) {
         <Alert tone="error">{state.message}</Alert>
       ) : null}
 
-      <Field label="Adresse e-mail" htmlFor="email" error={state.fieldErrors?.email}>
+      <Field label={t.email} htmlFor="email" error={state.fieldErrors?.email}>
         <Input
           id="email"
           name="email"
@@ -36,7 +37,7 @@ export function SignInForm({ suite }: { suite: string }) {
         />
       </Field>
 
-      <Field label="Mot de passe" htmlFor="password" error={state.fieldErrors?.password}>
+      <Field label={t.password} htmlFor="password" error={state.fieldErrors?.password}>
         <Input
           id="password"
           name="password"
@@ -48,21 +49,21 @@ export function SignInForm({ suite }: { suite: string }) {
         />
       </Field>
 
-      <SubmitButton className="w-full" pendingLabel="Connexion…">
-        Se connecter
+      <SubmitButton className="w-full" pendingLabel={t.signingIn}>
+        {t.signIn}
       </SubmitButton>
 
       <p className="text-center text-sm text-ink-soft">
-        Pas encore de compte ?{" "}
+        {t.noAccount}{" "}
         <Link href="/inscription" className="text-rust underline underline-offset-4">
-          Créer un compte
+          {t.createAccount}
         </Link>
       </p>
     </form>
   );
 }
 
-export function SignUpForm() {
+export function SignUpForm({ t }: { t: Dictionary["auth"]["form"] }) {
   const [state, action] = useActionState<ActionState, FormData>(signUpAction, IDLE);
 
   return (
@@ -71,7 +72,7 @@ export function SignUpForm() {
         <Alert tone="error">{state.message}</Alert>
       ) : null}
 
-      <Field label="Nom complet" htmlFor="fullName" error={state.fieldErrors?.fullName}>
+      <Field label={t.fullName} htmlFor="fullName" error={state.fieldErrors?.fullName}>
         <Input
           id="fullName"
           name="fullName"
@@ -81,7 +82,7 @@ export function SignUpForm() {
         />
       </Field>
 
-      <Field label="Adresse e-mail" htmlFor="email" error={state.fieldErrors?.email}>
+      <Field label={t.email} htmlFor="email" error={state.fieldErrors?.email}>
         <Input
           id="email"
           name="email"
@@ -93,9 +94,9 @@ export function SignUpForm() {
       </Field>
 
       <Field
-        label="Mot de passe"
+        label={t.password}
         htmlFor="password"
-        hint="8 caractères minimum."
+        hint={t.passwordHint}
         error={state.fieldErrors?.password}
       >
         <Input
@@ -109,14 +110,14 @@ export function SignUpForm() {
         />
       </Field>
 
-      <SubmitButton className="w-full" pendingLabel="Création…">
-        Créer mon compte
+      <SubmitButton className="w-full" pendingLabel={t.signingUp}>
+        {t.signUp}
       </SubmitButton>
 
       <p className="text-center text-sm text-ink-soft">
-        Déjà membre ?{" "}
+        {t.alreadyMember}{" "}
         <Link href="/connexion" className="text-rust underline underline-offset-4">
-          Se connecter
+          {t.signInLink}
         </Link>
       </p>
     </form>

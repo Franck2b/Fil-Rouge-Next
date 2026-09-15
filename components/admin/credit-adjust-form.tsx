@@ -6,8 +6,15 @@ import { Input } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { adjustCreditsAction } from "@/lib/actions/admin";
 import { IDLE, type ActionState } from "@/lib/actions/types";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
-export function CreditAdjustForm({ memberId }: { memberId: string }) {
+export function CreditAdjustForm({
+  memberId,
+  t,
+}: {
+  memberId: string;
+  t: Dictionary["admin"]["members"];
+}) {
   const [state, action] = useActionState<ActionState, FormData>(adjustCreditsAction, IDLE);
 
   return (
@@ -16,22 +23,22 @@ export function CreditAdjustForm({ memberId }: { memberId: string }) {
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="block">
-          <span className="label-tech block text-kraft">Ajustement</span>
+          <span className="label-tech block text-kraft">{t.adjustment}</span>
           <Input name="delta" type="number" step={1} defaultValue={10} className="mt-1.5 w-24" />
         </label>
 
         <label className="block flex-1">
-          <span className="label-tech block text-kraft">Motif</span>
+          <span className="label-tech block text-kraft">{t.reason}</span>
           <Input
             name="reason"
-            defaultValue="Achat pack Projet"
+            defaultValue={t.reasonDefault}
             className="mt-1.5 min-w-48"
             required
           />
         </label>
 
         <SubmitButton variant="secondary" size="sm" pendingLabel="…">
-          Appliquer
+          {t.apply}
         </SubmitButton>
       </div>
 

@@ -6,14 +6,19 @@ import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { finishOnboardingAction, saveOnboardingProfileAction } from "@/lib/actions/onboarding";
 import { IDLE, type ActionState } from "@/lib/actions/types";
-import { MACHINE_CATEGORIES, type Profile, type Workshop } from "@/lib/types";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+import { MACHINE_CATEGORY_VALUES, type Profile, type Workshop } from "@/lib/types";
 
 export function OnboardingProfileForm({
   profile,
   workshops,
+  t,
+  savingLabel,
 }: {
   profile: Profile;
   workshops: Workshop[];
+  t: Dictionary["onboarding"]["form"];
+  savingLabel: string;
 }) {
   const [state, action] = useActionState<ActionState, FormData>(
     saveOnboardingProfileAction,
@@ -26,7 +31,7 @@ export function OnboardingProfileForm({
         <Alert tone="error">{state.message}</Alert>
       ) : null}
 
-      <Field label="Nom complet" htmlFor="fullName" error={state.fieldErrors?.fullName}>
+      <Field label={t.fullName} htmlFor="fullName" error={state.fieldErrors?.fullName}>
         <Input
           id="fullName"
           name="fullName"
@@ -36,12 +41,7 @@ export function OnboardingProfileForm({
         />
       </Field>
 
-      <Field
-        label="Téléphone"
-        htmlFor="phone"
-        hint="Utilisé uniquement pour vous prévenir d'une machine indisponible."
-        error={state.fieldErrors?.phone}
-      >
+      <Field label={t.phone} htmlFor="phone" hint={t.phoneHint} error={state.fieldErrors?.phone}>
         <Input
           id="phone"
           name="phone"
@@ -52,9 +52,9 @@ export function OnboardingProfileForm({
       </Field>
 
       <Field
-        label="Atelier de rattachement"
+        label={t.homeWorkshop}
         htmlFor="homeWorkshopId"
-        hint="Vos crédits restent valables partout, c'est seulement votre atelier par défaut."
+        hint={t.homeWorkshopHint}
         error={state.fieldErrors?.homeWorkshopId}
       >
         <Select
@@ -64,7 +64,7 @@ export function OnboardingProfileForm({
           required
         >
           <option value="" disabled>
-            Choisir un atelier
+            {t.chooseWorkshop}
           </option>
           {workshops.map((workshop) => (
             <option key={workshop.id} value={workshop.id}>
@@ -74,12 +74,20 @@ export function OnboardingProfileForm({
         </Select>
       </Field>
 
-      <SubmitButton pendingLabel="Enregistrement…">Continuer</SubmitButton>
+      <SubmitButton pendingLabel={savingLabel}>{t.continue}</SubmitButton>
     </form>
   );
 }
 
-export function OnboardingCertificationForm({ defaultCategory }: { defaultCategory?: string }) {
+export function OnboardingCertificationForm({
+  t,
+  categories,
+  sendingLabel,
+}: {
+  t: Dictionary["onboarding"]["form"];
+  categories: Dictionary["categories"];
+  sendingLabel: string;
+}) {
   const [state, action] = useActionState<ActionState, FormData>(finishOnboardingAction, IDLE);
 
   return (
@@ -89,33 +97,33 @@ export function OnboardingCertificationForm({ defaultCategory }: { defaultCatego
       ) : null}
 
       <Field
-        label="Famille de machines"
+        label={t.family}
         htmlFor="category"
-        hint="Vous pourrez en demander d'autres à tout moment depuis votre espace."
+        hint={t.familyHint}
         error={state.fieldErrors?.category}
       >
-        <Select id="category" name="category" defaultValue={defaultCategory ?? ""} required>
+        <Select id="category" name="category" defaultValue="" required>
           <option value="" disabled>
-            Choisir une famille
+            {t.chooseFamily}
           </option>
-          {MACHINE_CATEGORIES.map((category) => (
-            <option key={category.value} value={category.value}>
-              {category.label} — {category.blurb}
+          {MACHINE_CATEGORY_VALUES.map((category) => (
+            <option key={category} value={category}>
+              {categories[category].label} — {categories[category].blurb}
             </option>
           ))}
         </Select>
       </Field>
 
       <Field
-        label="Votre expérience"
+        label={t.experience}
         htmlFor="motivation"
-        hint="Quelques lignes suffisent : machines déjà pratiquées, formation suivie, projet visé."
+        hint={t.experienceHint}
         error={state.fieldErrors?.motivation}
       >
         <Textarea id="motivation" name="motivation" rows={5} required minLength={20} />
       </Field>
 
-      <SubmitButton pendingLabel="Envoi…">Terminer l&apos;inscription</SubmitButton>
+      <SubmitButton pendingLabel={sendingLabel}>{t.finish}</SubmitButton>
     </form>
   );
 }

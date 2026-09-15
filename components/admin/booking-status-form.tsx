@@ -4,13 +4,16 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { IDLE, type ActionState } from "@/lib/actions/types";
 import { updateBookingStatusAction } from "@/lib/actions/admin";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 export function BookingStatusForm({
   bookingId,
   status,
+  t,
 }: {
   bookingId: string;
   status: string;
+  t: Dictionary["admin"]["bookings"];
 }) {
   const [state, action] = useActionState<ActionState, FormData>(
     updateBookingStatusAction,
@@ -23,13 +26,13 @@ export function BookingStatusForm({
 
       {status !== "completed" ? (
         <Button type="submit" name="status" value="completed" variant="secondary" size="sm">
-          Marquer honorée
+          {t.markCompleted}
         </Button>
       ) : null}
 
       {status !== "cancelled" ? (
         <Button type="submit" name="status" value="cancelled" variant="danger" size="sm">
-          Annuler
+          {t.cancel}
         </Button>
       ) : null}
 

@@ -11,9 +11,9 @@ import type { ComponentProps } from "react";
  */
 export function SubmitButton({
   children,
-  pendingLabel = "Envoi…",
+  pendingLabel,
   ...props
-}: ComponentProps<typeof Button> & { pendingLabel?: string }) {
+}: ComponentProps<typeof Button> & { pendingLabel: string }) {
   const { pending } = useFormStatus();
 
   return (

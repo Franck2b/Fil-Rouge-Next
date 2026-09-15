@@ -1,5 +1,5 @@
-import Link from "next/link";
 import type { ComponentProps } from "react";
+import { Link } from "@/components/ui/link";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger" | "inverse" | "onRust" | "ghostInverse";
 type Size = "sm" | "md";

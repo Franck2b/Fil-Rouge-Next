@@ -1,6 +1,9 @@
-import Link from "next/link";
 import { Badge, type Tone } from "@/components/ui/badge";
-import { BOOKING_STATUS_LABELS, type BookingWithMachine } from "@/lib/types";
+import { Link } from "@/components/ui/link";
+import { localizeMachine } from "@/lib/i18n/content";
+import { getI18n } from "@/lib/i18n/server";
+import { fill } from "@/lib/i18n/text";
+import type { BookingWithMachine } from "@/lib/types";
 import { durationInHours, formatSlot } from "@/lib/format";
 
 const STATUS_TONES: Record<BookingWithMachine["status"], Tone> = {
@@ -10,7 +13,10 @@ const STATUS_TONES: Record<BookingWithMachine["status"], Tone> = {
   completed: "neutral",
 };
 
-export function BookingCard({ booking }: { booking: BookingWithMachine }) {
+export async function BookingCard({ booking }: { booking: BookingWithMachine }) {
+  const { locale, t } = await getI18n();
+  const machine = booking.machine ? localizeMachine(booking.machine, locale) : null;
+
   return (
     <li className="bg-paper">
       <Link
@@ -19,25 +25,28 @@ export function BookingCard({ booking }: { booking: BookingWithMachine }) {
       >
         <div className="min-w-0">
           <p className="label-tech text-kraft">
-            {booking.machine?.workshop?.name ?? "Atelier retiré"}
+            {machine?.workshop?.name ?? t.common.removedWorkshop}
           </p>
           <h3 className="mt-2 truncate text-lg group-hover:text-rust">
-            {booking.machine?.name ?? "Machine retirée"}
+            {machine?.name ?? t.common.removedMachine}
           </h3>
           <p className="mt-1 text-sm text-ink-soft">
-            {formatSlot(booking.starts_at, booking.ends_at)}
+            {formatSlot(locale, booking.starts_at, booking.ends_at)}
           </p>
           {booking.project ? (
-            <p className="mt-2 text-sm text-kraft">Projet : {booking.project}</p>
+            <p className="mt-2 text-sm text-kraft">
+              {fill(t.app.bookingCard.project, { project: booking.project })}
+            </p>
           ) : null}
         </div>
 
         <div className="flex shrink-0 flex-col items-end gap-2">
-          <Badge tone={STATUS_TONES[booking.status]}>
-            {BOOKING_STATUS_LABELS[booking.status]}
-          </Badge>
+          <Badge tone={STATUS_TONES[booking.status]}>{t.bookingStatus[booking.status]}</Badge>
           <span className="label-tech text-kraft">
-            {durationInHours(booking.starts_at, booking.ends_at)} h · {booking.credits} cr
+            {fill(t.common.bookingMeta, {
+              hours: durationInHours(booking.starts_at, booking.ends_at),
+              credits: booking.credits,
+            })}
           </span>
         </div>
       </Link>

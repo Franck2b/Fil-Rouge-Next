@@ -5,13 +5,16 @@ import { Alert } from "@/components/ui/alert";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { cancelBookingAction } from "@/lib/actions/bookings";
 import { IDLE, type ActionState } from "@/lib/actions/types";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 export function CancelBookingForm({
   bookingId,
   refundable,
+  t,
 }: {
   bookingId: string;
   refundable: boolean;
+  t: Dictionary["app"]["booking"];
 }) {
   const [state, action] = useActionState<ActionState, FormData>(cancelBookingAction, IDLE);
 
@@ -28,13 +31,11 @@ export function CancelBookingForm({
       ) : null}
 
       <p className="text-sm text-ink-soft">
-        {refundable
-          ? "Annulation gratuite : les crédits seront intégralement recrédités."
-          : "Le créneau commence dans moins de deux heures : les crédits ne seront pas remboursés."}
+        {refundable ? t.cancelRefundable : t.cancelNonRefundable}
       </p>
 
-      <SubmitButton variant="danger" pendingLabel="Annulation…">
-        Annuler la réservation
+      <SubmitButton variant="danger" pendingLabel={t.cancelPending}>
+        {t.cancelSubmit}
       </SubmitButton>
     </form>
   );

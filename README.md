@@ -86,7 +86,7 @@ toute la sécurité repose sur les politiques RLS de Postgres.
 npm run dev
 ```
 
-L'application est sur **http://localhost:3000**. La vitrine doit afficher
+L'application est sur **http://localhost:3000**, qui redirige vers `/fr` ou `/en` selon la langue du navigateur. La vitrine doit afficher
 « 3 ateliers · 14 machines » : si ces compteurs sont à zéro, les clés ou le seed
 sont en cause.
 
@@ -186,6 +186,11 @@ Sur une installation neuve, suivre l'étape 7 ci-dessus.
 - Indicateurs du réseau, file d'arbitrage des habilitations, réservations filtrables,
   édition du parc machines, recherche de membres et ajustement des crédits
 
+### Bilingue FR / EN
+- Toutes les pages en français et en anglais, bouton FR / EN dans chaque barre de navigation
+- URL par langue (`/fr/…`, `/en/…`), pré-rendues toutes les deux, balises `hreflang` et sitemap bilingue
+- Messages d'erreur, validations de formulaire et catalogue de machines traduits
+
 ---
 
 ## 4. Choix d'architecture
@@ -194,12 +199,13 @@ Sur une installation neuve, suivre l'étape 7 ci-dessus.
 
 ```
 app/
-├─ (marketing)/   public, indexable, pré-rendu
-├─ (auth)/        entrée dans le produit
-├─ (onboarding)/  compte créé mais pas encore membre
-├─ (app)/         espace authentifié
-├─ (admin)/       rôle distinct, accès protégé
-└─ api/           contrat JSON pour la future app mobile
+├─ [lang]/            fr ou en — premier segment de toute URL
+│  ├─ (marketing)/    public, indexable, pré-rendu
+│  ├─ (auth)/         entrée dans le produit
+│  ├─ (onboarding)/   compte créé mais pas encore membre
+│  ├─ (app)/          espace authentifié
+│  └─ (admin)/        rôle distinct, accès protégé
+└─ api/               contrat JSON pour la future app mobile
 ```
 
 Chaque groupe porte son propre `layout.tsx`, donc sa propre garde et son propre
@@ -270,6 +276,20 @@ Référence : le **plan d'atelier**. Papier clair (`#F5F1E8`), encre charbon
 dégradé ni ombre diffuse : les volumes naissent des bordures. Titres en Archivo,
 texte en Inter, cotes et étiquettes techniques en IBM Plex Mono. Les visuels du
 catalogue sont des schémas générés, pas des photos de banque d'images.
+
+### Internationalisation
+
+La langue est un segment dynamique, `app/[lang]/`, dont le layout racine déclare les deux valeurs dans `generateStaticParams` : chaque page est pré-rendue dans les deux langues. `proxy.ts` redirige une URL sans langue vers la langue mémorisée, sinon celle du navigateur.
+
+Les textes vivent dans deux dictionnaires TypeScript (`lib/i18n/dictionaries`). Le dictionnaire anglais est typé sur le français : une traduction manquante fait échouer le build.
+
+| Contexte | Lecture de la langue | Raison |
+| --- | --- | --- |
+| Server Component | `getI18n()` via `next/root-params` | aucun passage de prop nécessaire |
+| Client Component | tranche du dictionnaire reçue en prop | `root-params` indisponible côté client |
+| Server Action, garde d'accès | `getRequestI18n()` via un cookie posé par `proxy.ts` | `root-params` indisponible dans les actions |
+
+Les heures sont construites et affichées explicitement en `Europe/Paris` : un serveur en UTC, comme sur Vercel, décalerait sinon chaque créneau.
 
 ---
 
@@ -354,3 +374,4 @@ que côté Next.js.
   parcours principaux.
 - Le filtre par atelier du back-office s'applique **après** la pagination : sur un
   volume réel, il faudrait un filtre imbriqué PostgREST ou une vue dédiée.
+- La **traduction anglaise du catalogue** (machines, ateliers) est tenue côté front, dans `lib/i18n/content.ts`, indexée par slug. C'est viable parce que le catalogue est fixe ; un catalogue éditable depuis le back-office imposerait de stocker les traductions en base.

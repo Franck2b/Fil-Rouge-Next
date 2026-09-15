@@ -6,16 +6,21 @@ import { Input, Select } from "@/components/ui/field";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { updateMachineAction } from "@/lib/actions/admin";
 import { IDLE, type ActionState } from "@/lib/actions/types";
-import { MACHINE_STATUS_LABELS, type MachineStatus } from "@/lib/types";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+import { MACHINE_STATUS_VALUES, type MachineStatus } from "@/lib/types";
 
 export function MachineRowForm({
   machineId,
   status,
   hourlyCredits,
+  t,
+  statusLabels,
 }: {
   machineId: string;
   status: MachineStatus;
   hourlyCredits: number;
+  t: Dictionary["admin"]["machines"];
+  statusLabels: Dictionary["machineStatus"];
 }) {
   const [state, action] = useActionState<ActionState, FormData>(updateMachineAction, IDLE);
 
@@ -28,18 +33,18 @@ export function MachineRowForm({
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="block">
-          <span className="label-tech block text-kraft">Statut</span>
+          <span className="label-tech block text-kraft">{t.status}</span>
           <Select name="status" defaultValue={status} className="mt-1.5 w-44">
-            {(Object.keys(MACHINE_STATUS_LABELS) as MachineStatus[]).map((value) => (
+            {MACHINE_STATUS_VALUES.map((value) => (
               <option key={value} value={value}>
-                {MACHINE_STATUS_LABELS[value]}
+                {statusLabels[value]}
               </option>
             ))}
           </Select>
         </label>
 
         <label className="block">
-          <span className="label-tech block text-kraft">Crédits / h</span>
+          <span className="label-tech block text-kraft">{t.creditsPerHour}</span>
           <Input
             name="hourlyCredits"
             type="number"
@@ -51,7 +56,7 @@ export function MachineRowForm({
         </label>
 
         <SubmitButton variant="secondary" size="sm" pendingLabel="…">
-          Enregistrer
+          {t.save}
         </SubmitButton>
       </div>
 

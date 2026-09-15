@@ -1,6 +1,8 @@
-import Link from "next/link";
+import { Link } from "@/components/ui/link";
+import { getI18n } from "@/lib/i18n/server";
 
-export function CreditBadge({ credits }: { credits: number }) {
+export async function CreditBadge({ credits }: { credits: number }) {
+  const { t } = await getI18n();
   const low = credits < 3;
 
   return (
@@ -10,9 +12,9 @@ export function CreditBadge({ credits }: { credits: number }) {
         low ? "border-brick/40 bg-brick-wash text-brick" : "border-line bg-paper text-ink-soft"
       }`}
     >
-      <span className="text-kraft">Solde</span>
+      <span className="text-kraft">{t.app.creditBadge.balance}</span>
       <span className="text-sm font-medium text-ink">{credits}</span>
-      <span>crédits</span>
+      <span>{t.app.creditBadge.credits}</span>
     </Link>
   );
 }

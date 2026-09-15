@@ -1,4 +1,6 @@
-/** Amplitude d'ouverture commune à tous les ateliers, en heures locales. */
+import { TIME_ZONE } from "@/lib/format";
+
+/** Amplitude d'ouverture commune à tous les ateliers, en heures de Paris. */
 export const OPENING_HOUR = 9;
 export const CLOSING_HOUR = 20;
 export const MAX_DURATION = 4;
@@ -8,10 +10,43 @@ export const SLOT_HOURS = Array.from(
   (_, index) => OPENING_HOUR + index,
 );
 
-/** Construit une Date locale à partir d'un jour "YYYY-MM-DD" et d'une heure pleine. */
+/** Décalage de Paris par rapport à UTC à un instant donné, en minutes (heure d'été comprise). */
+function parisOffsetMinutes(instant: Date) {
+  const zone = new Intl.DateTimeFormat("en-US", { timeZone: TIME_ZONE, timeZoneName: "longOffset" })
+    .formatToParts(instant)
+    .find((part) => part.type === "timeZoneName")?.value;
+
+  const match = zone?.match(/GMT([+-])(\d{2}):(\d{2})/);
+  if (!match) return 0;
+
+  const minutes = Number(match[2]) * 60 + Number(match[3]);
+  return match[1] === "-" ? -minutes : minutes;
+}
+
+/**
+ * Instant correspondant à une heure pleine d'un jour "YYYY-MM-DD", à l'heure de
+ * Paris. Indépendant du fuseau du serveur : « 14 h » désigne 14 h à l'atelier,
+ * que le code tourne en local ou sur Vercel.
+ */
 export function slotDate(day: string, hour: number) {
   const [year, month, date] = day.split("-").map(Number);
-  return new Date(year, month - 1, date, hour, 0, 0, 0);
+  const asUtc = Date.UTC(year, month - 1, date, hour);
+  return new Date(asUtc - parisOffsetMinutes(new Date(asUtc)) * 60_000);
+}
+
+/** Date du jour à Paris, au format "YYYY-MM-DD" des <input type="date">. */
+export function parisDay(instant = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(instant);
+}
+
+export function addDays(day: string, days: number) {
+  const [year, month, date] = day.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, date + days)).toISOString().slice(0, 10);
 }
 
 export type SlotState = "free" | "busy" | "past" | "closed";
@@ -42,13 +77,6 @@ export function computeSlots(
     return { hour, state: overlaps ? ("busy" as const) : ("free" as const) };
   });
 }
-
-export const SLOT_LABELS: Record<SlotState, string> = {
-  free: "Libre",
-  busy: "Occupé",
-  past: "Passé",
-  closed: "Ferme trop tôt",
-};
 
 /**
  * Conditions d'annulation d'une réservation, du point de vue du membre.

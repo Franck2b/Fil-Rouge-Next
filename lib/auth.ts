@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getRequestI18n, redirectTo } from "@/lib/i18n/request";
 import type { Profile } from "@/lib/types";
 
 export type Viewer = {
@@ -33,12 +33,17 @@ export async function getViewer(): Promise<Viewer | null> {
   return { userId: user.id, email: user.email ?? "", profile };
 }
 
-/** Garde des routes authentifiées. Renvoie vers la connexion en conservant la destination. */
+/**
+ * Garde des routes authentifiées. Renvoie vers la connexion en conservant la destination.
+ * Ces gardes servent aussi aux Server Actions, où le segment [lang] est
+ * illisible : la langue de redirection vient donc du cookie (getRequestI18n).
+ */
 export async function requireViewer(nextPath?: string): Promise<Viewer> {
   const viewer = await getViewer();
 
   if (!viewer) {
-    redirect(nextPath ? `/connexion?suite=${encodeURIComponent(nextPath)}` : "/connexion");
+    const { locale } = await getRequestI18n();
+    redirectTo(locale, nextPath ? `/connexion?suite=${encodeURIComponent(nextPath)}` : "/connexion");
   }
 
   return viewer;
@@ -49,7 +54,8 @@ export async function requireOnboardedViewer(nextPath?: string): Promise<Viewer>
   const viewer = await requireViewer(nextPath);
 
   if (!viewer.profile.onboarding_completed) {
-    redirect("/onboarding");
+    const { locale } = await getRequestI18n();
+    redirectTo(locale, "/onboarding");
   }
 
   return viewer;
@@ -60,7 +66,8 @@ export async function requireAdmin(): Promise<Viewer> {
   const viewer = await requireViewer("/admin");
 
   if (viewer.profile.role !== "admin") {
-    redirect("/tableau-de-bord?erreur=acces-refuse");
+    const { locale } = await getRequestI18n();
+    redirectTo(locale, "/tableau-de-bord?erreur=acces-refuse");
   }
 
   return viewer;

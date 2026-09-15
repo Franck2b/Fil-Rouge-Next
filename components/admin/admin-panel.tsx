@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
+import { getI18n } from "@/lib/i18n/server";
 
-export function AdminHeader({
+export async function AdminHeader({
   title,
   description,
   action,
@@ -9,10 +10,12 @@ export function AdminHeader({
   description?: string;
   action?: ReactNode;
 }) {
+  const { t } = await getI18n();
+
   return (
     <header className="flex flex-wrap items-start justify-between gap-4 border-b border-bone/15 pb-6">
       <div>
-        <p className="label-tech text-rust">Administration</p>
+        <p className="label-tech text-rust">{t.admin.eyebrow}</p>
         <h1 className="mt-2 text-3xl uppercase">{title}</h1>
         {description ? <p className="mt-3 max-w-2xl text-sm text-bone/60">{description}</p> : null}
       </div>
