@@ -366,6 +366,27 @@ Trois cas, traités en une ligne chacun :
 3. Les textes vivent dans **deux dictionnaires TypeScript**. `en.ts` est typé sur `fr.ts` : une clé oubliée **fait échouer le build**, et l'autocomplétion propose toutes les clés existantes.
 4. Le bouton `LocaleSwitcher` garde la page et ses paramètres (`?jour=…`) : seul le préfixe change.
 
+### Pourquoi deux dossiers : `lib/i18n/` et `app/[lang]/`
+
+Ils répondent à deux questions différentes :
+
+- **`lib/i18n/`** répond à « **quel texte** afficher » : dictionnaires, `getI18n()`, `fill()`, `plural()`.
+- **`app/[lang]/`** répond à « **dans quelle langue** est la page demandée ». C'est du routage : aucun texte dedans.
+
+Les crochets font de `[lang]` un **segment dynamique**, comme `[slug]` pour les machines : le premier morceau de chaque URL est une langue, et Next le transmet à toutes les pages. Le Pages Router avait une option `i18n` dans `next.config` ; **elle n'existe plus avec l'App Router**, et la documentation de Next 16 recommande précisément `app/[lang]/`.
+
+Pourquoi pas un simple cookie, sans toucher à `app/` ? C'était plus rapide, mais on perdait trois points du barème :
+
+| | Langue dans un cookie | Langue dans l'URL (`[lang]`) |
+| --- | --- | --- |
+| **Performance** | la page dépend du cookie, donc recalculée à chaque visite | `generateStaticParams` pré-rend chaque page en FR **et** en EN au build |
+| **SEO** | une seule URL pour deux langues : une seule version indexée | deux URL distinctes, balises `hreflang`, sitemap bilingue |
+| **Partage** | `/equipements` s'ouvre dans la langue du destinataire | `/en/equipements` s'ouvre toujours en anglais |
+
+Le lien entre les deux : c'est parce que `[lang]` est placé **au-dessus du layout racine** que `next/root-params` fonctionne, et donc que `getI18n()` peut lire la langue depuis n'importe quel Server Component sans prop.
+
+> **À dire en soutenance :** « `app/[lang]` décide de la langue à partir de l'URL, `lib/i18n` fournit les textes de cette langue. Les séparer permet de pré-rendre chaque langue et d'avoir une URL par langue pour le SEO. »
+
 ### Où lire la langue — trois cas, trois outils
 
 | Je suis dans… | J'écris | Pourquoi |
