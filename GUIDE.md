@@ -91,6 +91,7 @@ l'URL, il sert à donner un layout et une garde communs.
 
 | Fichier | Rôle | Quand je l'ouvre |
 | --- | --- | --- |
+| `images.ts` | **Toutes les photos de la vitrine** : chemin, dimensions, auteur, licence, source. Alimente aussi la page `/credits`. | Je change une photo. |
 | `i18n/dictionaries/fr.ts` | **Tous les textes français.** Sa forme définit le type `Dictionary`. | Je change ou j'ajoute un texte. |
 | `i18n/dictionaries/en.ts` | Tous les textes anglais, typés sur le français. | J'ajoute la traduction — le build échoue si une clé manque. |
 | `i18n/server.ts` | `getI18n()` : langue et dictionnaire dans un **Server Component**. | J'affiche un texte côté serveur. |
@@ -133,6 +134,7 @@ l'URL, il sert à donner un layout et une garde communs.
 | --- | --- |
 | Changer une **couleur**, une police, un espacement global | `app/globals.css` |
 | Modifier un **bouton / badge / alerte** partout | `components/ui/…` |
+| **Changer ou ajouter une photo** | déposer le fichier dans `public/img/photos/`, le déclarer dans `lib/images.ts` (auteur, licence, source), ajouter sa légende dans `credits.usage` des deux dictionnaires |
 | Ajouter une **variante de bouton** | `components/ui/button.tsx` : type `Variant` + objet `VARIANTS` |
 | Changer un **texte** (n'importe où) | `lib/i18n/dictionaries/fr.ts` **et** `en.ts` |
 | **Ajouter un texte traduit** | une clé dans `fr.ts`, la même dans `en.ts`, puis `{t.ma.cle}` — voir section 6 |

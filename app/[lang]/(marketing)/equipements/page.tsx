@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Field, Input, Select } from "@/components/ui/field";
 import { Link } from "@/components/ui/link";
+import { CardPhoto } from "@/components/marketing/card-photo";
+import { CATEGORY_PHOTOS } from "@/lib/images";
 import { getMachines, getWorkshops } from "@/lib/data/catalog";
 import { localizeMachine } from "@/lib/i18n/content";
 import { getI18n, localizedAlternates } from "@/lib/i18n/server";
@@ -128,20 +130,27 @@ async function MachineCatalog({ searchParams }: { searchParams: SearchParams }) 
         <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {results.map((machine) => (
             <li key={machine.id} className="border border-line bg-paper">
-              <Link href={`/equipements/${machine.slug}`} className="group flex h-full flex-col p-6">
-                <div className="flex items-start justify-between gap-3">
-                  <Badge tone="rust">{t.categories[machine.category].label}</Badge>
-                  {machine.status !== "available" ? (
-                    <Badge tone="amber">{t.machineStatus[machine.status]}</Badge>
-                  ) : null}
-                </div>
-                <h2 className="mt-5 text-lg group-hover:text-rust">{machine.name}</h2>
-                <p className="mt-2 flex-1 text-sm text-ink-soft">{machine.summary}</p>
-                <div className="label-tech mt-6 flex items-center justify-between text-kraft">
-                  <span>{machine.workshop?.city}</span>
-                  <span className="text-ink">
-                    {fill(t.common.creditsPerHourShort, { count: machine.hourly_credits })}
-                  </span>
+              <Link href={`/equipements/${machine.slug}`} className="group flex h-full flex-col">
+                <CardPhoto
+                  photo={CATEGORY_PHOTOS[machine.category]}
+                  alt={fill(t.machines.photoAlt, { category: t.categories[machine.category].label })}
+                  className="border-b border-line"
+                />
+                <div className="flex flex-1 flex-col p-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <Badge tone="rust">{t.categories[machine.category].label}</Badge>
+                    {machine.status !== "available" ? (
+                      <Badge tone="amber">{t.machineStatus[machine.status]}</Badge>
+                    ) : null}
+                  </div>
+                  <h2 className="mt-5 text-lg group-hover:text-rust">{machine.name}</h2>
+                  <p className="mt-2 flex-1 text-sm text-ink-soft">{machine.summary}</p>
+                  <div className="label-tech mt-6 flex items-center justify-between text-kraft">
+                    <span>{machine.workshop?.city}</span>
+                    <span className="text-ink">
+                      {fill(t.common.creditsPerHourShort, { count: machine.hourly_credits })}
+                    </span>
+                  </div>
                 </div>
               </Link>
             </li>
@@ -158,7 +167,7 @@ function CatalogSkeleton() {
       <div className="h-28 border border-line bg-paper" />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, index) => (
-          <div key={index} className="h-48 animate-pulse border border-line bg-paper" />
+          <div key={index} className="h-96 animate-pulse border border-line bg-paper" />
         ))}
       </div>
     </div>

@@ -1,6 +1,7 @@
-import Image from "next/image";
 import type { Metadata } from "next";
 import { Link } from "@/components/ui/link";
+import { CardPhoto } from "@/components/marketing/card-photo";
+import { workshopImage } from "@/lib/images";
 import { getWorkshops } from "@/lib/data/catalog";
 import { localizeWorkshop } from "@/lib/i18n/content";
 import { getI18n, localizedAlternates } from "@/lib/i18n/server";
@@ -37,12 +38,10 @@ export default async function WorkshopsPage() {
                 href={`/ateliers/${workshop.slug}`}
                 className="group grid gap-6 p-6 transition-colors hover:bg-bone md:grid-cols-[280px_1fr] md:items-center"
               >
-                <Image
-                  src={workshop.image_url ?? "/img/hero.png"}
-                  alt={fill(t.workshops.planAlt, { name: workshop.name })}
-                  width={1200}
-                  height={800}
-                  className="aspect-[3/2] w-full border border-line object-cover"
+                <CardPhoto
+                  photo={workshopImage(workshop)}
+                  alt={fill(t.workshops.photoAlt, { name: workshop.name })}
+                  className="border border-line"
                 />
                 <div>
                   <p className="label-tech text-rust">{workshop.city}</p>

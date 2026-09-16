@@ -104,6 +104,7 @@ export const en: Dictionary = {
     mySpace: "My space",
     copyright: "Gabarit — M2 EEMI student project.",
     cities: "Paris · Lyon · Nantes",
+    credits: "Photo credits",
   },
 
   notFound: {
@@ -134,8 +135,8 @@ export const en: Dictionary = {
       statWorkshops: "workshops",
       statMachines: "machines",
       statCredits: "free credits",
-      imageAlt: "Schematic view of a laser cutter mid-pass on its bed",
-      imageCaption: "Trotec Speedy 400 · Paris 11",
+      imageAlt: "Two members setting up a CNC router in a fab lab",
+      imageCaption: "A shared workshop session",
     },
     steps: {
       eyebrow: "How it works",
@@ -164,6 +165,10 @@ export const en: Dictionary = {
       title: "Six machine families",
       browseAll: "Browse all {count} machines",
     },
+    community: {
+      imageAlt: "Members of a shared workshop working together on electronics projects",
+      caption: "A shared workshop also means bench neighbours who help each other out.",
+    },
     places: {
       eyebrow: "The places",
       title: "Three workshops, one account",
@@ -188,7 +193,7 @@ export const en: Dictionary = {
     title: "Our workshops",
     intro:
       "Each workshop has its speciality, but one account is enough: your credits and certifications are valid across the whole network.",
-    planAlt: "Floor plan of the {name} workshop",
+    photoAlt: "The {name} workshop",
     notFound: "Workshop not found",
     address: "Address",
     opening: "Opening hours",
@@ -215,13 +220,13 @@ export const en: Dictionary = {
     allWorkshops: "All workshops",
     filter: "Filter",
     reset: "Reset",
+    photoAlt: "Illustrative photo: {category}",
     countOf: { one: "{count} machine of {total}", other: "{count} machines of {total}" },
     emptyTitle: "No machine matches",
     emptyText: "Broaden your search or remove a filter: the fleet changes regularly.",
     detail: {
       notFound: "Machine not found",
       metaDescription: "{summary} Bookable in {city} for {credits} credits an hour.",
-      schemaAlt: "Technical drawing — {name}",
       capabilities: "What this machine does",
       certificationTitle: "Certification required",
       certificationText:
@@ -317,6 +322,31 @@ export const en: Dictionary = {
     moreLink: "the page of the machine",
     moreTextAfter: "you are interested in: the constraints specific to each station are detailed there.",
     cta: "Create an account",
+  },
+
+  credits: {
+    metaTitle: "Photo credits",
+    metaDescription: "Authors, licences and sources of the photographs used on the Gabarit website.",
+    eyebrow: "Notices",
+    title: "Photo credits",
+    intro: "The photographs on this site come from Wikimedia Commons. Each one is used under its licence, and its author is credited below.",
+    author: "Author",
+    license: "Licence",
+    source: "View source",
+    unknownAuthor: "Author not specified",
+    usage: {
+      hero: "Home — main photo",
+      communaute: "Home — “How it works” banner",
+      "atelier-paris-11": "République workshop, Paris",
+      "atelier-lyon-7": "Guillotière workshop, Lyon",
+      "atelier-nantes-centre": "Chantiers workshop, Nantes",
+      "machine-laser": "Laser cutting family",
+      "machine-impression-3d": "3D printing family",
+      "machine-bois": "Woodwork family",
+      "machine-metal": "Metalwork family",
+      "machine-textile": "Textiles family",
+      "machine-electronique": "Electronics family",
+    },
   },
 
   auth: {

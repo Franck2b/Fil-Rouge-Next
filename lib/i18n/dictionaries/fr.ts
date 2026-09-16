@@ -109,6 +109,7 @@ export const fr = {
     mySpace: "Mon espace",
     copyright: "Gabarit — projet pédagogique M2 EEMI.",
     cities: "Paris · Lyon · Nantes",
+    credits: "Crédits photos",
   },
 
   notFound: {
@@ -139,8 +140,8 @@ export const fr = {
       statWorkshops: "ateliers",
       statMachines: "machines",
       statCredits: "crédits offerts",
-      imageAlt: "Vue schématique d'une découpeuse laser en cours de passe sur son plateau",
-      imageCaption: "Trotec Speedy 400 · Paris 11",
+      imageAlt: "Deux membres règlent une fraiseuse numérique dans un fab lab",
+      imageCaption: "Session en atelier partagé",
     },
     steps: {
       eyebrow: "Comment ça marche",
@@ -169,6 +170,10 @@ export const fr = {
       title: "Six familles de machines",
       browseAll: "Parcourir les {count} machines",
     },
+    community: {
+      imageAlt: "Des membres d'un atelier partagé travaillent ensemble sur des montages électroniques",
+      caption: "Un atelier partagé, c'est aussi des voisins d'établi qui s'entraident.",
+    },
     places: {
       eyebrow: "Les lieux",
       title: "Trois ateliers, un seul compte",
@@ -193,7 +198,7 @@ export const fr = {
     title: "Nos ateliers",
     intro:
       "Chaque atelier a sa spécialité, mais un seul compte suffit : vos crédits et vos habilitations sont valables sur l'ensemble du réseau.",
-    planAlt: "Plan de l'atelier {name}",
+    photoAlt: "L'atelier {name}",
     notFound: "Atelier introuvable",
     address: "Adresse",
     opening: "Ouverture",
@@ -220,13 +225,13 @@ export const fr = {
     allWorkshops: "Tous les ateliers",
     filter: "Filtrer",
     reset: "Réinitialiser",
+    photoAlt: "Photo d'illustration : {category}",
     countOf: { one: "{count} machine sur {total}", other: "{count} machines sur {total}" },
     emptyTitle: "Aucune machine ne correspond",
     emptyText: "Élargissez la recherche ou retirez un filtre : le parc évolue régulièrement.",
     detail: {
       notFound: "Machine introuvable",
       metaDescription: "{summary} Réservable à {city} pour {credits} crédits l'heure.",
-      schemaAlt: "Schéma technique — {name}",
       capabilities: "Ce que la machine permet",
       certificationTitle: "Habilitation requise",
       certificationText:
@@ -322,6 +327,31 @@ export const fr = {
     moreLink: "la fiche de la machine",
     moreTextAfter: "qui vous intéresse : les contraintes propres à chaque poste y sont détaillées.",
     cta: "Créer un compte",
+  },
+
+  credits: {
+    metaTitle: "Crédits photos",
+    metaDescription: "Auteurs, licences et sources des photographies utilisées sur le site Gabarit.",
+    eyebrow: "Mentions",
+    title: "Crédits photos",
+    intro: "Les photographies du site proviennent de Wikimedia Commons. Chacune est utilisée selon sa licence, et son auteur est crédité ci-dessous.",
+    author: "Auteur",
+    license: "Licence",
+    source: "Voir la source",
+    unknownAuthor: "Auteur non renseigné",
+    usage: {
+      hero: "Accueil — photo principale",
+      communaute: "Accueil — bandeau « Comment ça marche »",
+      "atelier-paris-11": "Atelier République, Paris",
+      "atelier-lyon-7": "Atelier Guillotière, Lyon",
+      "atelier-nantes-centre": "Atelier Chantiers, Nantes",
+      "machine-laser": "Famille découpe laser",
+      "machine-impression-3d": "Famille impression 3D",
+      "machine-bois": "Famille bois",
+      "machine-metal": "Famille métal",
+      "machine-textile": "Famille textile",
+      "machine-electronique": "Famille électronique",
+    },
   },
 
   auth: {

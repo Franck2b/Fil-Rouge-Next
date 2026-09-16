@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Link } from "@/components/ui/link";
+import { CATEGORY_PHOTOS } from "@/lib/images";
 import { getMachineBySlug, getMachines } from "@/lib/data/catalog";
 import { localizeMachine } from "@/lib/i18n/content";
 import { getI18n, localizedAlternates } from "@/lib/i18n/server";
@@ -66,11 +67,13 @@ export default async function MachinePage({ params }: Params) {
           <p className="mt-4 text-lg text-ink-soft">{machine.summary}</p>
 
           <Image
-            src={machine.image_url ?? "/img/hero.png"}
-            alt={fill(t.machines.detail.schemaAlt, { name: machine.name })}
-            width={1200}
-            height={800}
-            className="mt-10 w-full border border-line object-cover"
+            src={CATEGORY_PHOTOS[machine.category].src}
+            alt={fill(t.machines.photoAlt, { category })}
+            width={CATEGORY_PHOTOS[machine.category].width}
+            height={CATEGORY_PHOTOS[machine.category].height}
+            priority
+            sizes="(min-width: 1024px) 700px, 100vw"
+            className="mt-10 aspect-[3/2] w-full border border-line object-cover"
           />
 
           <div className="mt-10 max-w-2xl">

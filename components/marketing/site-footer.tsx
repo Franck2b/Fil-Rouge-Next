@@ -67,7 +67,12 @@ export async function SiteFooter() {
           <p>
             © <CurrentYear /> {t.footer.copyright}
           </p>
-          <p className="label-tech">{t.footer.cities}</p>
+          <div className="flex items-center gap-5">
+            <Link href="/credits" className="hover:text-rust">
+              {t.footer.credits}
+            </Link>
+            <p className="label-tech">{t.footer.cities}</p>
+          </div>
         </div>
       </div>
     </footer>

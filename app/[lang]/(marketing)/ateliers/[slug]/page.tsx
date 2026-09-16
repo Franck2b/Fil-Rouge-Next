@@ -4,6 +4,8 @@ import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Link } from "@/components/ui/link";
+import { CardPhoto } from "@/components/marketing/card-photo";
+import { CATEGORY_PHOTOS, workshopImage } from "@/lib/images";
 import { getMachinesByWorkshop, getWorkshopBySlug, getWorkshops } from "@/lib/data/catalog";
 import { localizeMachine, localizeWorkshop } from "@/lib/i18n/content";
 import { getI18n, localizedAlternates } from "@/lib/i18n/server";
@@ -79,11 +81,13 @@ export default async function WorkshopPage({ params }: Params) {
           </div>
 
           <Image
-            src={workshop.image_url ?? "/img/hero.png"}
-            alt={fill(t.workshops.planAlt, { name: workshop.name })}
-            width={1200}
-            height={800}
-            className="w-full border border-bone/25 object-cover"
+            src={workshopImage(workshop).src}
+            alt={fill(t.workshops.photoAlt, { name: workshop.name })}
+            width={workshopImage(workshop).width}
+            height={workshopImage(workshop).height}
+            priority
+            sizes="(min-width: 1024px) 420px, 100vw"
+            className="aspect-[3/2] w-full border border-bone/25 object-cover"
           />
         </div>
       </header>
@@ -94,18 +98,25 @@ export default async function WorkshopPage({ params }: Params) {
         <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {machines.map((machine) => (
             <li key={machine.id} className="border border-line bg-paper">
-              <Link href={`/equipements/${machine.slug}`} className="group block h-full p-6">
-                <div className="flex items-start justify-between gap-3">
-                  <Badge tone="rust">{t.categories[machine.category].label}</Badge>
-                  {machine.status !== "available" ? (
-                    <Badge tone="amber">{t.machineStatus[machine.status]}</Badge>
-                  ) : null}
+              <Link href={`/equipements/${machine.slug}`} className="group block h-full">
+                <CardPhoto
+                  photo={CATEGORY_PHOTOS[machine.category]}
+                  alt={fill(t.machines.photoAlt, { category: t.categories[machine.category].label })}
+                  className="border-b border-line"
+                />
+                <div className="p-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <Badge tone="rust">{t.categories[machine.category].label}</Badge>
+                    {machine.status !== "available" ? (
+                      <Badge tone="amber">{t.machineStatus[machine.status]}</Badge>
+                    ) : null}
+                  </div>
+                  <h3 className="mt-5 text-lg group-hover:text-rust">{machine.name}</h3>
+                  <p className="mt-2 text-sm text-ink-soft">{machine.summary}</p>
+                  <p className="label-tech mt-6 text-kraft">
+                    {plural(locale, t.plural.creditsPerHour, machine.hourly_credits)}
+                  </p>
                 </div>
-                <h3 className="mt-5 text-lg group-hover:text-rust">{machine.name}</h3>
-                <p className="mt-2 text-sm text-ink-soft">{machine.summary}</p>
-                <p className="label-tech mt-6 text-kraft">
-                  {plural(locale, t.plural.creditsPerHour, machine.hourly_credits)}
-                </p>
               </Link>
             </li>
           ))}

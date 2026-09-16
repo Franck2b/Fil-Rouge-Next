@@ -29,6 +29,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...localizedEntries("/equipements", 0.8, "weekly"),
     ...localizedEntries("/tarifs", 0.6, "monthly"),
     ...localizedEntries("/faq", 0.5, "monthly"),
+    ...localizedEntries("/credits", 0.2, "yearly"),
     ...workshops.flatMap((workshop) =>
       localizedEntries(`/ateliers/${workshop.slug}`, 0.7, "monthly"),
     ),

@@ -3,11 +3,13 @@ import type { Metadata } from "next";
 import { ButtonLink } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "@/components/ui/link";
+import { CardPhoto } from "@/components/marketing/card-photo";
 import { getMachines, getWorkshops } from "@/lib/data/catalog";
 import { localizeMachine, localizeWorkshop } from "@/lib/i18n/content";
 import { getI18n, localizedAlternates } from "@/lib/i18n/server";
 import { fill, plural } from "@/lib/i18n/text";
 import { MACHINE_CATEGORY_VALUES } from "@/lib/types";
+import { CATEGORY_PHOTOS, PHOTOS, workshopImage } from "@/lib/images";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getI18n();
@@ -69,12 +71,13 @@ export default async function HomePage() {
           <div className="relative">
             <div className="absolute -inset-3 border border-bone/15" aria-hidden />
             <Image
-              src="/img/hero.png"
+              src={PHOTOS.hero.src}
               alt={t.home.hero.imageAlt}
-              width={1600}
-              height={1000}
+              width={PHOTOS.hero.width}
+              height={PHOTOS.hero.height}
               priority
-              className="relative w-full border border-bone/25 object-cover"
+              sizes="(min-width: 1024px) 45vw, 100vw"
+              className="relative aspect-[4/3] w-full border border-bone/25 object-cover"
             />
             <p className="label-tech absolute -bottom-3 right-3 bg-rust px-2 py-1 text-paper">
               {t.home.hero.imageCaption}
@@ -100,6 +103,20 @@ export default async function HomePage() {
               </li>
             ))}
           </ol>
+
+          <figure className="mt-12 border border-line bg-paper">
+            <Image
+              src={PHOTOS.communaute.src}
+              alt={t.home.community.imageAlt}
+              width={PHOTOS.communaute.width}
+              height={PHOTOS.communaute.height}
+              sizes="(min-width: 1152px) 1112px, 100vw"
+              className="aspect-[21/9] w-full object-cover"
+            />
+            <figcaption className="border-t border-line px-5 py-4 text-sm text-ink-soft">
+              {t.home.community.caption}
+            </figcaption>
+          </figure>
         </div>
       </section>
 
@@ -123,17 +140,23 @@ export default async function HomePage() {
                 <li key={category} className="bg-paper">
                   <Link
                     href={`/equipements?categorie=${category}`}
-                    className="group flex h-full flex-col justify-between p-6 transition-colors hover:bg-bone"
+                    className="group flex h-full flex-col transition-colors hover:bg-bone"
                   >
-                    <div>
-                      <h3 className="text-xl group-hover:text-rust">
-                        {t.categories[category].label}
-                      </h3>
-                      <p className="mt-2 text-sm text-ink-soft">{t.categories[category].blurb}</p>
+                    <CardPhoto
+                      photo={CATEGORY_PHOTOS[category]}
+                      alt={fill(t.machines.photoAlt, { category: t.categories[category].label })}
+                    />
+                    <div className="flex flex-1 flex-col justify-between p-6">
+                      <div>
+                        <h3 className="text-xl group-hover:text-rust">
+                          {t.categories[category].label}
+                        </h3>
+                        <p className="mt-2 text-sm text-ink-soft">{t.categories[category].blurb}</p>
+                      </div>
+                      <p className="label-tech mt-8 text-kraft">
+                        {plural(locale, t.plural.machines, count)}
+                      </p>
                     </div>
-                    <p className="label-tech mt-8 text-kraft">
-                      {plural(locale, t.plural.machines, count)}
-                    </p>
                   </Link>
                 </li>
               );
@@ -155,12 +178,10 @@ export default async function HomePage() {
             {places.map((workshop) => (
               <li key={workshop.id} className="border border-line bg-paper">
                 <Link href={`/ateliers/${workshop.slug}`} className="group block">
-                  <Image
-                    src={workshop.image_url ?? "/img/hero.png"}
-                    alt={fill(t.workshops.planAlt, { name: workshop.name })}
-                    width={1200}
-                    height={800}
-                    className="aspect-[3/2] w-full border-b border-line object-cover"
+                  <CardPhoto
+                    photo={workshopImage(workshop)}
+                    alt={fill(t.workshops.photoAlt, { name: workshop.name })}
+                    className="border-b border-line"
                   />
                   <div className="p-5">
                     <p className="label-tech text-rust">{workshop.city}</p>
@@ -184,16 +205,22 @@ export default async function HomePage() {
           <ul className="mt-12 grid gap-px border border-line bg-line md:grid-cols-3">
             {featured.map((machine) => (
               <li key={machine.id} className="bg-paper">
-                <Link href={`/equipements/${machine.slug}`} className="group block h-full p-6">
-                  <div className="flex items-start justify-between gap-3">
-                    <Badge tone="rust">{t.categories[machine.category].label}</Badge>
-                    <span className="label-tech text-kraft">
-                      {fill(t.common.creditsPerHourShort, { count: machine.hourly_credits })}
-                    </span>
+                <Link href={`/equipements/${machine.slug}`} className="group block h-full">
+                  <CardPhoto
+                    photo={CATEGORY_PHOTOS[machine.category]}
+                    alt={fill(t.machines.photoAlt, { category: t.categories[machine.category].label })}
+                  />
+                  <div className="p-6">
+                    <div className="flex items-start justify-between gap-3">
+                      <Badge tone="rust">{t.categories[machine.category].label}</Badge>
+                      <span className="label-tech text-kraft">
+                        {fill(t.common.creditsPerHourShort, { count: machine.hourly_credits })}
+                      </span>
+                    </div>
+                    <h3 className="mt-5 text-lg group-hover:text-rust">{machine.name}</h3>
+                    <p className="mt-2 text-sm text-ink-soft">{machine.summary}</p>
+                    <p className="label-tech mt-6 text-kraft">{machine.workshop?.city}</p>
                   </div>
-                  <h3 className="mt-5 text-lg group-hover:text-rust">{machine.name}</h3>
-                  <p className="mt-2 text-sm text-ink-soft">{machine.summary}</p>
-                  <p className="label-tech mt-6 text-kraft">{machine.workshop?.city}</p>
                 </Link>
               </li>
             ))}
