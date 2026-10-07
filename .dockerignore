@@ -1,0 +1,24 @@
+# Réinstallés et reconstruits dans l'image : inutile de les envoyer au démon
+node_modules
+.next
+out
+*.tsbuildinfo
+next-env.d.ts
+
+# Secrets : jamais dans le contexte de build (le build les reçoit par secret BuildKit)
+.env*
+
+# Historique et outillage local
+.git
+.gitignore
+.vscode
+.claude
+npm-debug.log*
+
+# Fichiers Docker eux-mêmes, documentation et SQL : pas nécessaires au build
+Dockerfile
+.dockerignore
+compose.yaml
+docker.sh
+*.md
+supabase

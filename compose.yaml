@@ -1,0 +1,19 @@
+services:
+  web:
+    image: gabarit-next:latest
+    build:
+      context: .
+      secrets:
+        - env
+    ports:
+      - "3000:3000"
+    read_only: true
+    tmpfs:
+      - /app/.next/cache:uid=1000,gid=1000
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+secrets:
+  env:
+    file: .env.local

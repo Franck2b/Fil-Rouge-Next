@@ -2,6 +2,10 @@
 
 Projet fil rouge M2 EEMI · **Next.js 16.3 (App Router) + Supabase**.
 
+- En ligne : <https://fil-rouge-next.vercel.app>
+- Application mobile : <https://github.com/Franck2b/projet-fil-rouge-react-native>
+- Lancement Docker : `./docker.sh` (voir [section 2](#2-docker))
+
 Gabarit est un produit de réservation de machines dans un réseau d'ateliers partagés
 (fablabs). Un membre passe une **habilitation** par famille de machines, achète des
 **crédits**, puis réserve des **créneaux horaires** sur une machine précise d'un
@@ -114,9 +118,10 @@ Habilitations** et valider la demande du membre.
 | --- | --- |
 | `npm run dev` | Serveur de développement (Turbopack) |
 | `npm run build` | Build de production — à lancer avant tout rendu |
-| `npm run start` | Serveur de production (nécessite un `build` préalable) |
+| `npm run start` | Serveur de production (nécessite un `build` préalable). Fonctionne, avec un avertissement lié à `output: "standalone"` : c'est l'image Docker qui utilise le serveur autonome |
 | `npm run lint` | ESLint (config `next/core-web-vitals`) |
 | `npm run typecheck` | `tsc --noEmit` |
+| `./docker.sh` | Construit et lance l'image Docker de production (voir [section 2](#2-docker)) |
 
 ### Déployer sur Vercel
 
@@ -139,7 +144,233 @@ production), puis déployer. Aucune configuration supplémentaire n'est requise.
 
 ---
 
-## 2. Comptes de démonstration
+## 2. Docker
+
+L'application Next.js est livrée sous forme d'image Docker de production. La base
+de données reste chez Supabase : le conteneur ne contient que le serveur Next.js,
+qui appelle Supabase par HTTPS.
+
+```
+Navigateur ──► localhost:3000 (hôte) ──► conteneur web:3000 (node server.js) ──► Supabase (HTTPS)
+```
+
+### Fichiers
+
+| Fichier | Rôle |
+| --- | --- |
+| [`Dockerfile`](./Dockerfile) | Build multi-étapes : dépendances → build → image d'exécution minimale |
+| [`.dockerignore`](./.dockerignore) | Exclut du contexte `node_modules`, `.next`, `.git` et **tous les `.env*`** |
+| [`compose.yaml`](./compose.yaml) | Construit et lance le service `web` sur le port 3000 |
+| [`docker.sh`](./docker.sh) | Script de lancement : vérifie les prérequis, lance, attend que l'app réponde |
+| `next.config.ts` | `output: "standalone"` : Next.js produit un serveur autonome sans `node_modules` complet |
+
+### Lancer en une commande
+
+Prérequis : Docker Engine 23+ avec Compose v2 (BuildKit activé par défaut), et un
+`.env.local` rempli comme à l'**étape 5** ci-dessus (étapes 2 à 5 nécessaires, pas
+besoin de `npm install`).
+
+```bash
+./docker.sh
+```
+
+Le script vérifie que Docker répond et que `.env.local` existe et n'est plus
+l'exemple, construit l'image, démarre le conteneur, puis attend que le
+`HEALTHCHECK` passe à `healthy`. L'application est alors sur
+**http://localhost:3000**.
+
+| Commande | Effet |
+| --- | --- |
+| `./docker.sh` ou `./docker.sh up` | Construit l'image `gabarit-next` et démarre le conteneur |
+| `./docker.sh logs` | Suit les journaux du serveur |
+| `./docker.sh down` | Arrête et supprime le conteneur |
+| `./docker.sh scan` | Lance le scan Docker Scout de l'image |
+
+### Sans le script
+
+Avec Compose :
+
+```bash
+docker compose up --build -d
+docker compose ps
+docker compose down
+```
+
+Ou avec `docker build` / `docker run` :
+
+```bash
+docker build --secret id=env,src=.env.local -t gabarit-next .
+docker run --rm -p 3000:3000 --read-only --tmpfs /app/.next/cache:uid=1000,gid=1000 gabarit-next
+```
+
+Après une modification du code, relancer `./docker.sh` : seules les étapes dont
+les fichiers ont changé sont reconstruites.
+
+### Le Dockerfile, étape par étape
+
+| Étape | Image | Contenu |
+| --- | --- | --- |
+| `deps` | `node:22-alpine` | `COPY package.json package-lock.json` puis `npm ci` |
+| `builder` | `node:22-alpine` | `node_modules` de `deps` + sources, puis `npm run build` |
+| `runner` | `node:22-alpine` | Uniquement `.next/standalone`, `.next/static` et `public` |
+
+- **`FROM node:22-alpine`** — Node 22 est la LTS en cours, Next.js 16 exige
+  Node 20.9 minimum. La variante Alpine pèse environ 170 Mo, contre plus d'1 Go
+  pour l'image `node:22` basée sur Debian.
+- **`WORKDIR /app`** — crée le dossier et en fait le répertoire courant de toutes
+  les instructions suivantes et du processus lancé.
+- **`COPY package*.json` avant `COPY . .`** — Docker met chaque instruction en
+  cache. Tant que les manifestes ne changent pas, la couche `npm ci` (la plus
+  longue) est réutilisée, même si le code source change.
+- **`--mount=type=cache,target=/root/.npm`** — le cache npm survit entre deux
+  builds sans finir dans l'image.
+- **Multi-étapes** — l'image finale repart de zéro et ne récupère que le résultat
+  du build : pas de sources TypeScript, pas de `devDependencies`, pas de
+  compilateur. Image finale : **environ 245 Mo**.
+- **Suppression de npm / npx / yarn** dans `runner` — inutiles pour exécuter
+  `node server.js`, ils embarquent leurs propres dépendances et donc leurs
+  propres vulnérabilités.
+- **`USER node`** — le serveur tourne avec l'utilisateur non-root (uid 1000)
+  fourni par l'image officielle. Une faille dans l'application ne donne pas les
+  droits root dans le conteneur.
+- **`HOSTNAME=0.0.0.0`** — sans cela, le serveur standalone n'écoute que sur
+  l'interface locale du conteneur et n'est pas joignable depuis l'hôte.
+- **`HEALTHCHECK`** — Docker interroge `/robots.txt` toutes les 30 s ; le
+  conteneur passe `healthy` quand le serveur répond. `fetch` est natif dans
+  Node 22 : pas besoin d'installer `curl` dans l'image.
+- **`CMD ["node", "server.js"]`** — serveur de production. `npm run dev` n'est
+  jamais utilisé dans l'image.
+
+### `EXPOSE` et `ports`
+
+`EXPOSE 3000` dans le Dockerfile est **documentaire** : il indique sur quel port
+l'application écoute dans le conteneur, mais n'ouvre rien. C'est `ports:
+"3000:3000"` dans `compose.yaml` (ou `-p 3000:3000`) qui publie le port :
+`<port de l'hôte>:<port du conteneur>`. Pour servir sur le port 8080 de la
+machine : `"8080:3000"`.
+
+### Variables d'environnement et secrets
+
+Les trois variables du projet sont `NEXT_PUBLIC_*`. Next.js les **remplace par
+leur valeur dans le code au moment du build**, côté client comme côté serveur :
+elles sont donc nécessaires pendant `npm run build`, et plus du tout à
+l'exécution (le conteneur fonctionne sans aucune variable).
+
+Elles sont transmises par un **secret BuildKit** :
+
+```dockerfile
+RUN --mount=type=secret,id=env,target=/app/.env.production.local,required=true \
+    npm run build
+```
+
+`.env.local` est monté en lecture seule le temps de cette seule commande, sous le
+nom que Next.js lit au build. Il n'est écrit dans **aucune couche** de l'image et
+n'apparaît pas dans `docker history`. Ce choix évite deux erreurs classiques :
+
+- **`COPY .env`** — le fichier resterait dans une couche de l'image, lisible par
+  quiconque récupère l'image. `.dockerignore` exclut de toute façon `.env*` du
+  contexte de build.
+- **`ARG` / `--build-arg`** — la valeur serait visible dans `docker history`.
+
+Ces valeurs sont publiques par nature (la clé *publishable* est faite pour vivre
+dans le navigateur, la RLS protège les données) ; la méthode reste celle qu'on
+appliquerait à un vrai secret. **Aucune clé `service_role` / `sb_secret_…` n'est
+utilisée.**
+
+Conséquence à connaître : changer de projet Supabase impose de **reconstruire**
+l'image, pas seulement de la relancer.
+
+### Durcissement à l'exécution
+
+Dans `compose.yaml` :
+
+- `read_only: true` — le système de fichiers du conteneur est en lecture seule ;
+- `tmpfs: /app/.next/cache` — seul dossier inscriptible, en mémoire, pour le
+  cache d'optimisation d'images de Next.js (propriétaire `node`) ;
+- `no-new-privileges` — un processus ne peut pas gagner de privilèges (setuid) ;
+- `restart: unless-stopped` — relance automatique en cas de crash.
+
+### Vérifier que l'image fonctionne
+
+```bash
+docker compose ps                                   # STATUS : Up (healthy)
+curl -I http://localhost:3000                       # 307 vers /fr
+docker history gabarit-next | grep -i supabase      # aucune ligne : pas de secret dans l'historique
+docker run --rm --entrypoint id gabarit-next        # uid=1000(node) : non-root
+```
+
+Puis ouvrir http://localhost:3000 : la vitrine doit afficher « 14 machines ».
+
+### Scan Docker Scout
+
+Docker Scout est inclus dans Docker Desktop. Sur Docker Engine (Linux), installer
+le plugin puis se connecter à Docker Hub (compte gratuit) :
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh -o install-scout.sh
+sh install-scout.sh
+docker login
+```
+
+Puis :
+
+```bash
+./docker.sh scan
+```
+
+ce qui revient à :
+
+```bash
+docker scout quickview gabarit-next:latest
+docker scout cves --only-severity critical,high gabarit-next:latest
+```
+
+`quickview` résume les vulnérabilités par sévérité pour l'image et pour l'image de
+base ; `cves` les détaille paquet par paquet, avec la version corrigée quand elle
+existe. `docker scout recommendations gabarit-next:latest` propose une image de
+base plus récente ou moins vulnérable.
+
+**Résultat du scan** : à compléter après exécution (date, nombre de
+vulnérabilités par sévérité, paquets concernés, corrections appliquées ou raison
+de ne pas corriger).
+
+### Usage de l'IA pour Docker
+
+**Proposé par l'IA (Claude Code)** : le Dockerfile multi-étapes en mode
+`standalone`, le `.dockerignore`, le `compose.yaml` et le script `docker.sh`.
+
+**Vérifié à la main** :
+
+- l'image se construit et le conteneur passe `healthy` ;
+- toutes les zones répondent depuis le conteneur : vitrine FR / EN, catalogue
+  (données Supabase réelles), redirection des pages protégées vers la connexion,
+  route API JSON, optimisation d'images ;
+- `docker history` ne contient aucune valeur de `.env.local`, et l'image ne
+  contient aucun fichier `.env` ;
+- le processus tourne en `uid=1000`, sans npm dans l'image ;
+- le conteneur fonctionne **sans aucune variable d'environnement** à
+  l'exécution, ce qui confirme que les `NEXT_PUBLIC_*` sont inlinées au build.
+
+**Corrigé** : la première version de `compose.yaml` passait aussi `.env.local` au
+conteneur via `env_file`. Le test ci-dessus a montré que c'était inutile — et
+trompeur, puisque modifier ces variables sans reconstruire n'aurait eu aucun
+effet. La ligne a été retirée.
+
+### Limites
+
+- L'image est liée à **un** projet Supabase, choisi au build (voir plus haut).
+- Le build a besoin d'Internet : `next/font` télécharge les polices Google et le
+  pré-rendu de la vitrine lit le catalogue Supabase. Un `Turbopack build failed`
+  isolé vient en général d'une coupure réseau : relancer `./docker.sh`.
+- Le cache de Next.js est en mémoire (`tmpfs`) : il repart de zéro à chaque
+  redémarrage du conteneur. En production réelle on monterait un volume.
+- Supabase n'est pas conteneurisé : c'est un service managé, comme en production.
+- Image de base référencée par tag (`node:22-alpine`) et non par digest : un
+  rebuild peut récupérer une version plus récente de Node 22.
+
+---
+
+## 3. Comptes de démonstration
 
 | Rôle | E-mail | Mot de passe |
 | --- | --- | --- |
@@ -158,7 +389,7 @@ Sur une installation neuve, suivre l'étape 7 ci-dessus.
 
 ---
 
-## 3. Fonctionnalités
+## 4. Fonctionnalités
 
 ### Vitrine publique — `(marketing)`
 - Accueil, `/ateliers`, `/ateliers/[slug]`, `/equipements`, `/equipements/[slug]`, `/tarifs`, `/faq`
@@ -193,7 +424,7 @@ Sur une installation neuve, suivre l'étape 7 ci-dessus.
 
 ---
 
-## 4. Choix d'architecture
+## 5. Choix d'architecture
 
 ### Route groups
 
@@ -293,7 +524,7 @@ Les heures sont construites et affichées explicitement en `Europe/Paris` : un s
 
 ---
 
-## 5. Schéma de données
+## 6. Schéma de données
 
 ```
 workshops ──┬── machines ──── bookings ──── credit_transactions
@@ -310,27 +541,32 @@ profiles ───┴── certifications ──┘
 | `bookings` | Créneaux réservés, avec contrainte anti-chevauchement |
 | `credit_transactions` | Historique des débits et remboursements |
 
-Les coordonnées GPS des ateliers sont déjà en base : elles serviront à la
-géolocalisation de la future application mobile.
+Les coordonnées GPS des ateliers servent à la géolocalisation de l'application
+mobile.
 
 ---
 
-## 6. Suite mobile (React Native)
+## 7. Application mobile (React Native)
 
-Le concept a été choisi pour que les deux capacités natives imposées aient un
-usage réel, pas décoratif :
+L'application mobile est dans un dépôt séparé :
+<https://github.com/Franck2b/projet-fil-rouge-react-native>. Elle partage ce
+backend Supabase : mêmes comptes, mêmes machines, mêmes crédits, mêmes règles
+métier. Le site sert les usages « au bureau », l'app l'usage sur place, en
+atelier :
 
-- **NFC** — chaque machine porte une étiquette NFC. Le membre approche son
-  téléphone pour ouvrir sa session : l'app vérifie qu'une réservation confirmée
-  couvre l'heure courante sur *cette* machine et déclenche le check-in. C'est le
-  chaînon manquant entre « avoir réservé » et « avoir réellement utilisé ».
-- **Géolocalisation** — trouver l'atelier le plus proche, et filtrer les machines
-  libres dans l'heure autour de soi. `workshops.latitude/longitude` et la route
-  `/api/machines/[slug]/disponibilites` existent déjà pour ça.
+- **Scan de QR code** — chaque machine porte un QR code. Le scanner déclare
+  l'arrivée du membre : le serveur vérifie qu'une réservation confirmée couvre
+  l'heure courante sur *cette* machine et enregistre la trace. C'est le chaînon
+  manquant entre « avoir réservé » et « avoir réellement utilisé ».
+- **Géolocalisation** — les ateliers sont classés du plus proche au plus loin, et
+  un scan n'est accepté qu'à moins de 300 m de l'atelier.
+
+La table des arrivées et ses fonctions SQL sont fournies par le dépôt mobile
+(`supabase/0003_check_ins.sql`), à exécuter après les migrations de ce dépôt.
 
 ---
 
-## 7. Usage de l'IA
+## 8. Usage de l'IA
 
 **Outils utilisés.** Claude Code (agent en terminal) pour la génération du
 squelette, des composants répétitifs et du SQL ; documentation officielle
@@ -357,7 +593,7 @@ que côté Next.js.
 
 ---
 
-## 8. Limites connues
+## 9. Limites connues
 
 - Les **packs de crédits ne sont pas payants** : l'achat est simulé par un
   ajustement manuel depuis le back-office. Aucun prestataire de paiement n'est
