@@ -22,7 +22,8 @@ ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0
 
-RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx \
+RUN apk upgrade --no-cache \
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx \
            /opt/yarn-* /usr/local/bin/yarn /usr/local/bin/yarnpkg
 
 COPY --from=builder --chown=node:node /app/public ./public

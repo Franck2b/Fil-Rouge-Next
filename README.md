@@ -204,7 +204,9 @@ docker run --rm -p 3000:3000 --read-only --tmpfs /app/.next/cache:uid=1000,gid=1
 ```
 
 Après une modification du code, relancer `./docker.sh` : seules les étapes dont
-les fichiers ont changé sont reconstruites.
+les fichiers ont changé sont reconstruites. Le script construit avec `--pull` :
+l'image de base `node:22-alpine` est retéléchargée si une version corrigée est
+sortie.
 
 ### Le Dockerfile, étape par étape
 
@@ -227,6 +229,9 @@ les fichiers ont changé sont reconstruites.
 - **Multi-étapes** — l'image finale repart de zéro et ne récupère que le résultat
   du build : pas de sources TypeScript, pas de `devDependencies`, pas de
   compilateur. Image finale : **environ 245 Mo**.
+- **`apk upgrade`** dans `runner` — applique les correctifs de sécurité Alpine
+  publiés depuis la dernière reconstruction de l'image Node officielle (cas de
+  zlib, voir le scan plus bas).
 - **Suppression de npm / npx / yarn** dans `runner` — inutiles pour exécuter
   `node server.js`, ils embarquent leurs propres dépendances et donc leurs
   propres vulnérabilités.
@@ -330,9 +335,49 @@ base ; `cves` les détaille paquet par paquet, avec la version corrigée quand e
 existe. `docker scout recommendations gabarit-next:latest` propose une image de
 base plus récente ou moins vulnérable.
 
-**Résultat du scan** : à compléter après exécution (date, nombre de
-vulnérabilités par sévérité, paquets concernés, corrections appliquées ou raison
-de ne pas corriger).
+#### Résultat du scan — 7 octobre 2026
+
+**Premier scan** : `1C 2H 0M 0L`, score de santé **C (56 %)**.
+
+| Paquet | Sévérité | Faille | Corrigée en |
+| --- | --- | --- | --- |
+| `next` 16.3.5 | Critique (CVSS 9.5) | GHSA-vcvr-r3jv-pc5j | 16.3.6 |
+| `zlib` 1.3.2-r0 (Alpine) | Haute | CVE-2026-85091 | 1.3.2-r1 |
+| `sharp` 0.35.4 (dépendance de Next) | Haute (CVSS 8.9) | GHSA-wq5f-xc86-pv6w | 0.35.5 |
+
+**Corrections** :
+
+- `next` et `eslint-config-next` passés en 16.3.6 dans `package.json` ;
+- `sharp` passé en 0.35.5 par `npm update sharp` : la plage acceptée par Next
+  (`^0.35.4`) l'autorisait, seul le lockfile a changé ;
+- `zlib` : même l'image `node:22-alpine` la plus récente contenait encore la
+  version vulnérable. Le correctif existait dans les dépôts Alpine : un
+  `apk upgrade` dans l'étape `runner` l'installe (il a aussi mis à jour OpenSSL).
+
+**Second scan** : `0C 0H 0M 0L`, score **B (78 %)**, règle « No fixable critical
+or high vulnerabilities » validée. Lint, typecheck, build et parcours de
+l'application revérifiés après ces mises à jour.
+
+**À retenir** : l'image de base seule, `node:22-alpine`, affiche
+`0C 11H 9M 1L`. L'image du projet n'en hérite pas, parce que l'étape `runner`
+supprime npm et yarn, qui portent ces failles.
+
+**Les deux règles encore en avertissement** :
+
+- *Copyleft licensed packages* (21 paquets) — composants système Alpine (busybox,
+  apk-tools, libgcc… en GPL-2.0), certificats racines (MPL-2.0) et libvips,
+  utilisé par sharp pour l'optimisation d'images (LGPL-3.0). Ils sont exécutés
+  tels quels, sans modification ni distribution de l'image : aucune obligation
+  pour ce projet. C'est une règle juridique, pas de sécurité.
+- *Supply chain attestations missing* — l'image n'a pas d'attestations SBOM et
+  de provenance. Elles se génèrent au moment de pousser l'image vers un registre
+  (`docker buildx build --sbom=true --provenance=mode=max --push`) ; l'image
+  étant construite et lancée en local, sans registre, elles ne sont pas produites.
+
+**Proposé par Scout, non retenu** : passer à `node:24-alpine` (2 failles hautes
+de moins dans l'image de base). Ces failles ne se retrouvent pas dans notre image,
+et Node 22 est encore maintenu en LTS jusqu'en avril 2027 : on garde la même
+version de Node qu'en développement.
 
 ### Usage de l'IA pour Docker
 

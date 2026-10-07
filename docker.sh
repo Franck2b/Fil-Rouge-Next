@@ -20,7 +20,8 @@ check_env() {
 
 up() {
   check_env
-  docker compose up --build --detach
+  docker compose build --pull
+  docker compose up --detach
   printf "Attente du démarrage"
   for _ in $(seq 1 30); do
     if [[ "$(docker inspect --format '{{.State.Health.Status}}' "$(docker compose ps -q web)")" == "healthy" ]]; then
